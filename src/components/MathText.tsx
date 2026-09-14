@@ -25,7 +25,7 @@ export function MathText({ text, className = '' }: { text: string; className?: s
   return (
     <span 
       ref={containerRef} 
-      className={`inline-block whitespace-nowrap leading-relaxed ${className}`}
+      className={`math-content leading-relaxed ${className}`}
       dangerouslySetInnerHTML={{ __html: cleanText }}
     />
   );

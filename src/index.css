@@ -18,7 +18,7 @@
 }
 
 .variation-table .math-renderer {
-    display: inline-block;
+    display: block;
     white-space: nowrap !important;
     width: max-content;
 }
@@ -40,4 +40,81 @@
 
 .variation-table {
     min-width: 520px;
+}
+
+/* Fix text wrapping and layout for question and answers */
+html,
+body,
+#root {
+  max-width: 100%;
+}
+
+.math-content {
+  display: block;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  max-width: 100%;
+}
+
+.katex-display {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.katex {
+  /* Prevent math tokens from breaking */
+  white-space: nowrap;
+}
+
+/* Ensure answers don't overflow */
+.answer-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.answer-option .answer-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  line-height: 1.55;
+}
+
+.answer-option .answer-label {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.answers-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .answers-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+.question-card,
+.question-content {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.question-text {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
 }

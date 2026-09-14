@@ -256,7 +256,7 @@ export function StudentExam() {
           {/* Answer Area */}
           <div className="space-y-4">
             {currentQuestion.question_type === 'MCQ_SINGLE' && (
-              <div className="grid grid-cols-1 gap-3">
+              <div className="answers-grid">
                 {(currentQuestion as McqQuestion).options.map((opt, i) => {
                   const labels = ['A', 'B', 'C', 'D'];
                   const isSelected = answers[currentQuestion.id] === opt.id;
@@ -264,16 +264,16 @@ export function StudentExam() {
                     <button
                       key={opt.id}
                       onClick={() => setAnswer(currentQuestion.id, opt.id)}
-                      className={`flex items-start text-left p-4 rounded-xl border-2 transition-all ${
+                      className={`answer-option text-left p-4 rounded-xl border-2 transition-all ${
                         isSelected ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200 hover:border-indigo-200 hover:bg-slate-50'
                       }`}
                     >
-                      <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold mr-4 shrink-0 ${
+                      <span className={`answer-label w-8 h-8 rounded-full font-bold mr-4 ${
                         isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {labels[i]}
                       </span>
-                      <div className="mt-1 flex-1 overflow-x-auto">
+                      <div className="answer-content font-medium pt-0.5">
                         <MathText text={opt.content} />
                       </div>
                     </button>
@@ -290,9 +290,9 @@ export function StudentExam() {
                   
                   return (
                     <div key={stmt.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                      <div className="flex gap-3 mb-4">
-                        <span className="font-bold text-slate-600">{labels[i]})</span>
-                        <div className="flex-1 overflow-x-auto"><MathText text={stmt.content} /></div>
+                      <div className="answer-option mb-4 border-none p-0">
+                        <span className="answer-label font-bold text-slate-600">{labels[i]})</span>
+                        <div className="answer-content font-medium"><MathText text={stmt.content} /></div>
                       </div>
                       <div className="flex gap-4">
                         <button

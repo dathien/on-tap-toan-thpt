@@ -231,11 +231,11 @@ export function WordImport() {
                 {q.question_type === 'MCQ_SINGLE' && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {q.options.map((opt: any, i: number) => (
-                      <div key={opt.id} className={`p-4 rounded-xl border-2 flex items-start gap-3 ${opt.isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
-                        <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${opt.isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                      <div key={opt.id} className={`answer-option p-4 rounded-xl border-2 ${opt.isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
+                        <span className={`answer-label w-6 h-6 rounded-full font-bold text-sm ${opt.isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
                           {['A','B','C','D'][i]}
                         </span>
-                        <div className="flex-1 overflow-x-auto text-sm"><MathText text={opt.content} /></div>
+                        <div className="answer-content text-sm"><MathText text={opt.content} /></div>
                       </div>
                     ))}
                   </div>
@@ -244,9 +244,9 @@ export function WordImport() {
                 {q.question_type === 'TRUE_FALSE_GROUP' && (
                   <div className="space-y-3">
                     {q.statements.map((stmt: any, i: number) => (
-                      <div key={stmt.id} className="p-4 rounded-xl border border-slate-100 bg-slate-50 flex items-start gap-3">
-                        <span className="font-bold text-slate-500">{['a','b','c','d'][i]})</span>
-                        <div className="flex-1 overflow-x-auto text-sm"><MathText text={stmt.content} /></div>
+                      <div key={stmt.id} className="answer-option p-4 rounded-xl border border-slate-100 bg-slate-50">
+                        <span className="answer-label font-bold text-slate-500">{['a','b','c','d'][i]})</span>
+                        <div className="answer-content text-sm"><MathText text={stmt.content} /></div>
                         <span className={`px-3 py-1 rounded-md text-sm font-bold ${stmt.isTrue ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
                           {stmt.isTrue ? 'ĐÚNG' : 'SAI'}
                         </span>

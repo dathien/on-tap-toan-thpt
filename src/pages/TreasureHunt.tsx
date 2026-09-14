@@ -267,13 +267,13 @@ export function TreasureHunt() {
           </div>
         </div>
 
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <div className="text-lg text-slate-800 mb-6">
+        <div className="question-card bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+          <div className="question-content question-text text-lg text-slate-800 mb-6">
             <MathText text={sanitizeQuestionText(q.content)} />
           </div>
           <VisualRenderer visual={q.visual} />
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+          <div className="answers-grid mt-8">
             {(q as any).options?.map((opt: any, oIdx: number) => {
               const isSelected = selectedOption === opt.id;
               const optIsCorrect = opt.isCorrect;
@@ -297,19 +297,19 @@ export function TreasureHunt() {
                   onClick={() => handleAnswer(opt.id, opt)}
                   disabled={showExplanation}
                   className={clsx(
-                    "text-left flex items-start gap-3 p-4 rounded-xl border-2 transition-all",
+                    "answer-option text-left p-4 rounded-xl border-2 transition-all",
                     btnClass
                   )}
                 >
                   <span className={clsx(
-                    "w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-sm font-bold border",
+                    "answer-label w-7 h-7 rounded-full text-sm font-bold border",
                     showExplanation && optIsCorrect ? "bg-emerald-500 border-emerald-500 text-white" :
                     showExplanation && isSelected && !optIsCorrect ? "bg-red-500 border-red-500 text-white" :
                     "bg-slate-100 border-slate-300 text-slate-500"
                   )}>
                     {String.fromCharCode(65 + oIdx)}
                   </span>
-                  <span className="font-medium pt-0.5">
+                  <span className="answer-content font-medium pt-0.5">
                     <MathText text={sanitizeQuestionText(opt.content)} />
                   </span>
                 </button>

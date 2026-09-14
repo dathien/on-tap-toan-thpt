@@ -410,7 +410,7 @@ const handleStartSetup = () => {
                     : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
                 )}
               >
-                {(!selectedGrade || !selectedTopic || !selectedLesson || !target) ? 'VUI LÒNG CHỌN ĐẦY ĐỦ' : 'BẮT ĐẦU CHẨN ĐOÁN'}
+                {(!selectedGrade || !selectedTopic || !selectedLesson || !target) ? 'VUI LÒNG CHỌN ĐẦY ĐỦ' : 'BẮT ĐẦU HỌC'}
               </button>
             </div>
           </div>
@@ -551,22 +551,22 @@ const handleStartSetup = () => {
                 {diagnosticQuestions.map((q, i) => (
                   <div key={q.id}>
                     <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
-                    <div className="mb-4 text-slate-800 text-lg">
-                      <MathText text={sanitizeQuestionText(q.content)} />
-                    </div>
+                    <div className="question-content question-text mb-4 text-slate-800 text-lg">
+                        <MathText text={sanitizeQuestionText(q.content)} />
+                      </div>
                     <VisualRenderer visual={q.visual} />
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                    <div className="answers-grid mt-4">
                       {(q as any).options?.map((opt: any, oIdx: number) => (
                         <label 
-                          key={opt.id}
-                          className={clsx(
-                            "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                            quizAnswers[q.id] === opt.id 
-                              ? "border-indigo-600 bg-indigo-50" 
-                              : "border-slate-100 hover:border-indigo-200 bg-white"
-                          )}
-                        >
+                                  key={opt.id}
+                                  className={clsx(
+                                    "answer-option p-4 rounded-xl border-2 cursor-pointer transition-all",
+                                    quizAnswers[q.id] === opt.id 
+                                      ? "border-indigo-600 bg-indigo-50" 
+                                      : "border-slate-100 hover:border-indigo-200 bg-white"
+                                  )}
+                                >
                           <input 
                             type="radio" 
                             name={`diag_${q.id}`}
@@ -575,14 +575,14 @@ const handleStartSetup = () => {
                             onChange={() => setQuizAnswers({...quizAnswers, [q.id]: opt.id})}
                           />
                           <span className={clsx(
-                            "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-sm font-bold border",
-                            quizAnswers[q.id] === opt.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-100 text-slate-500 border-slate-200"
-                          )}>
+                              "answer-label w-6 h-6 rounded-full font-bold border text-sm",
+                              quizAnswers[q.id] === opt.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-100 text-slate-500 border-slate-200"
+                            )}>
                             {String.fromCharCode(65 + oIdx)}
                           </span>
-                          <span className="text-slate-700 font-medium pt-0.5">
-                            <MathText text={sanitizeQuestionText(opt.content)} />
-                          </span>
+                          <span className="answer-content text-slate-700 font-medium pt-0.5">
+                              <MathText text={sanitizeQuestionText(opt.content)} />
+                            </span>
                         </label>
                       ))}
                     </div>
@@ -754,15 +754,15 @@ const handleStartSetup = () => {
                         {practiceQuestions.map((q, i) => (
                           <div key={q.id} className="p-6 border border-slate-200 rounded-xl">
                             <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
-                            <div className="mb-4 text-slate-800 text-lg">
-                              <MathText text={sanitizeQuestionText(q.content)} />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                            <div className="question-content question-text mb-4 text-slate-800 text-lg">
+                        <MathText text={sanitizeQuestionText(q.content)} />
+                      </div>
+                            <div className="answers-grid mt-4">
                               {(q as any).options?.map((opt: any, oIdx: number) => (
                                 <label 
                                   key={opt.id}
                                   className={clsx(
-                                    "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                                    "answer-option p-4 rounded-xl border-2 cursor-pointer transition-all",
                                     quizAnswers[q.id] === opt.id 
                                       ? "border-indigo-600 bg-indigo-50" 
                                       : "border-slate-100 hover:border-indigo-200 bg-white"
@@ -775,14 +775,14 @@ const handleStartSetup = () => {
                                     onChange={() => setQuizAnswers({...quizAnswers, [q.id]: opt.id})}
                                   />
                                   <span className={clsx(
-                                    "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-sm font-bold border",
-                                    quizAnswers[q.id] === opt.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-100 text-slate-500 border-slate-200"
-                                  )}>
+                              "answer-label w-6 h-6 rounded-full font-bold border text-sm",
+                              quizAnswers[q.id] === opt.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-100 text-slate-500 border-slate-200"
+                            )}>
                                     {String.fromCharCode(65 + oIdx)}
                                   </span>
-                                  <span className="text-slate-700 font-medium pt-0.5">
-                                    <MathText text={sanitizeQuestionText(opt.content)} />
-                                  </span>
+                                  <span className="answer-content text-slate-700 font-medium pt-0.5">
+                              <MathText text={sanitizeQuestionText(opt.content)} />
+                            </span>
                                 </label>
                               ))}
                             </div>
@@ -941,20 +941,20 @@ const handleStartSetup = () => {
                   {finalQuestions.map((q, i) => (
                     <div key={q.id}>
                       <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
-                      <div className="mb-4 text-slate-800 text-lg">
+                      <div className="question-content question-text mb-4 text-slate-800 text-lg">
                         <MathText text={sanitizeQuestionText(q.content)} />
                       </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                      <div className="answers-grid mt-4">
                         {(q as any).options?.map((opt: any, oIdx: number) => (
                           <label 
-                            key={opt.id}
-                            className={clsx(
-                              "flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all",
-                              quizAnswers[q.id] === opt.id 
-                                ? "border-indigo-600 bg-indigo-50" 
-                                : "border-slate-100 hover:border-indigo-200 bg-white"
-                            )}
-                          >
+                                  key={opt.id}
+                                  className={clsx(
+                                    "answer-option p-4 rounded-xl border-2 cursor-pointer transition-all",
+                                    quizAnswers[q.id] === opt.id 
+                                      ? "border-indigo-600 bg-indigo-50" 
+                                      : "border-slate-100 hover:border-indigo-200 bg-white"
+                                  )}
+                                >
                             <input 
                               type="radio" 
                               className="sr-only"
@@ -962,12 +962,12 @@ const handleStartSetup = () => {
                               onChange={() => setQuizAnswers({...quizAnswers, [q.id]: opt.id})}
                             />
                             <span className={clsx(
-                              "w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-sm font-bold border",
+                              "answer-label w-6 h-6 rounded-full font-bold border text-sm",
                               quizAnswers[q.id] === opt.id ? "bg-indigo-600 text-white border-indigo-600" : "bg-slate-100 text-slate-500 border-slate-200"
                             )}>
                               {String.fromCharCode(65 + oIdx)}
                             </span>
-                            <span className="text-slate-700 font-medium pt-0.5">
+                            <span className="answer-content text-slate-700 font-medium pt-0.5">
                               <MathText text={sanitizeQuestionText(opt.content)} />
                             </span>
                           </label>
