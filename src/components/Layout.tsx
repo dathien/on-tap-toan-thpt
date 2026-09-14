@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard, Gem, 
   BookOpen,
   Compass,
   Database, 
