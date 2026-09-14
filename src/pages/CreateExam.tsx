@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { ExamConfig, Grade } from '../types';
-import { Settings2, BookOpen, Database, FileText, PenTool, Loader2 } from 'lucide-react';
+import { Settings2, BookOpen, Database, FileText, PenTool, Loader2 , CheckCircle2, X } from 'lucide-react';
 import { parseDocx, extractQuestionsFromText } from '../utils/docxParser';
 
 export function CreateExam() {
@@ -297,9 +297,32 @@ export function CreateExam() {
                    }
                 }}
               />
-            </div>
+                        </div>
           </div>
-
+          
+          {source === 'WORD' && file && (
+            <div className="mt-4 p-4 border border-indigo-200 bg-indigo-50 rounded-xl flex items-center justify-between">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0">
+                    <CheckCircle2 size={20} />
+                 </div>
+                 <div>
+                    <div className="font-bold text-slate-800">{file.name}</div>
+                    <div className="text-sm text-slate-500">
+                      {Math.round(file.size / 1024)} KB • {isParsing ? parseStatus : 'Đã tải lên'}
+                    </div>
+                 </div>
+               </div>
+               <button 
+                  type="button" 
+                  onClick={() => { setFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                  className="text-slate-400 hover:text-red-500 transition-colors"
+               >
+                 <X size={20} />
+               </button>
+            </div>
+          )}
+          
         </div>
 
         <div className="bg-slate-50 border-t border-slate-200 p-6 md:px-8 flex justify-end">

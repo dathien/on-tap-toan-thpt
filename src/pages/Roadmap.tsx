@@ -196,7 +196,7 @@ const demoCurriculum: Record<number, { id: string, name: string, lessons: { id: 
 };
 
 // Generic Unit Generator based on Topic
-const generateUnitsForTopic = (topic: string): LearningUnit[] => {
+const generateUnitsForTopic = (topic: string, abilityLevel?: string): LearningUnit[] => {
   return [
     {
       id: 'u1',
@@ -277,7 +277,10 @@ export function Roadmap() {
   }, [session]);
 
 const handleStartSetup = () => {
-    if (!selectedGrade || !selectedTopic || !selectedLesson) return;
+    if (!selectedGrade || !selectedTopic || !selectedLesson || !target || !selectedAbility) {
+        alert("Vui lòng chọn đầy đủ thông tin.");
+        return;
+    }
     
     const qs = proposedQuestions || generateRoadmapQuestions();
     
@@ -302,7 +305,7 @@ const handleStartSetup = () => {
       currentUnitIndex: 0,
       progress: 0,
       startedAt: new Date().toISOString(),
-      questions: qs
+      questions: qs || []
     };
     
     setSession(newSession);
@@ -633,8 +636,8 @@ const handleStartSetup = () => {
         
         {editingQuestion && (
           <QuestionEditorModal
-            question={editingQuestion}
-            onClose={() => setEditingQuestion(null)}
+            initialQuestion={editingQuestion}
+            onCancel={() => setEditingQuestion(null)}
             onSave={(mode, newQ) => {
                setProposedQuestions(prev => prev ? prev.map(q => q.id === newQ.id ? newQ : q) : null);
                setEditingQuestion(null);
@@ -650,7 +653,7 @@ const handleStartSetup = () => {
   // Helper: Get generic questions (mock filtering for diagnostic/practice)
   // In a real app, this filters by session.topic and difficulty
 
-  const generateRoadmapQuestions = () => {
+  function generateRoadmapQuestions() {
     let reqCounts = { rec: 0, und: 0, app: 0, high: 0 };
     if (selectedAbility === 'WEAK') {
       reqCounts = { rec: 5, und: 2, app: 1, high: 0 };
@@ -694,7 +697,7 @@ const handleStartSetup = () => {
     return selected;
   };
 
-  const handlePreview = () => {
+  function handlePreview() {
     const qs = generateRoadmapQuestions();
     setProposedQuestions(qs);
     setShowPreview(true);
@@ -702,15 +705,15 @@ const handleStartSetup = () => {
 
   const getQuestions = (count: number) => {
     if (session?.questions && session.questions.length > 0) {
-        // Randomly pull from the pre-generated pool
         const shuffled = [...session.questions].sort(() => 0.5 - Math.random());
-        return shuffled.slice(0, count);
+        return shuffled.slice(0, count) || [];
     }
-    return fetchQuestions(questions, {
+    const res = fetchQuestions(questions, {
         gradeId: currentGrade,
         questionTypes: ['MCQ_SINGLE'],
         count: count
     });
+    return res || [];
   };
 
   const getTargetScore = () => {
@@ -794,6 +797,23 @@ const handleStartSetup = () => {
     );
   };
 
+  if (!session) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-8 pb-12 mt-8 text-center">
+        <div className="bg-red-50 text-red-600 p-8 rounded-2xl border border-red-200">
+          <h2 className="text-xl font-bold mb-4">Lỗi tải lộ trình</h2>
+          <p>Không tìm thấy dữ liệu lộ trình đang học.</p>
+          <button 
+            onClick={() => setView('HOME')}
+            className="mt-6 px-6 py-2 bg-red-600 text-white font-bold rounded-xl"
+          >
+            Quay lại trang chủ
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // ---------------------------------------------------------------------------
   // RENDER: DIAGNOSTIC
   // ---------------------------------------------------------------------------
@@ -838,6 +858,20 @@ const handleStartSetup = () => {
         
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
           {!quizSubmitted ? (
+            diagnosticQuestions.length === 0 ? (
+                <div className="text-center p-8">
+                  <h3 className="text-xl font-bold text-slate-800 mb-4">Chưa có đủ câu hỏi phù hợp cho bài học này.</h3>
+                  <button 
+                    onClick={() => {
+                        // Keep session alive but return to setup so they can change grade/topic
+                        setView('SETUP');
+                    }}
+                    className="mt-4 px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700"
+                  >
+                    Quay lại thiết lập
+                  </button>
+                </div>
+            ) : (
             <>
               <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
                 <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-xl flex items-center justify-center">
@@ -902,7 +936,7 @@ const handleStartSetup = () => {
                 </button>
               </div>
             </>
-          ) : (
+          )) : (
             <div className="text-center py-12">
               <div className="w-24 h-24 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle2 size={48} />
@@ -1053,6 +1087,17 @@ const handleStartSetup = () => {
                     </div>
 
                     {!quizSubmitted ? (
+                      practiceQuestions.length === 0 ? (
+                        <div className="text-center p-8 bg-slate-50 rounded-xl border border-slate-200">
+                          <p className="text-slate-600 mb-4 font-medium">Chưa có câu hỏi luyện tập nào cho bài này.</p>
+                          <button 
+                            onClick={nextUnitOrAssessment}
+                            className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl"
+                          >
+                            Bỏ qua & Đi tiếp
+                          </button>
+                        </div>
+                      ) : (
                       <>
                         {practiceQuestions.map((q, i) => (
                           <div key={q.id} className="p-6 border border-slate-200 rounded-xl">
@@ -1101,7 +1146,7 @@ const handleStartSetup = () => {
                            </button>
                         </div>
                       </>
-                    ) : (
+                    )) : (
                       <div className="text-center py-8">
                         {quizScore >= 70 ? (
                            <>
@@ -1230,6 +1275,24 @@ const handleStartSetup = () => {
         
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
            {!quizSubmitted ? (
+               finalQuestions.length === 0 ? (
+                <div className="text-center p-8 bg-slate-50 rounded-xl border border-slate-200">
+                  <p className="text-slate-600 mb-4 font-medium">Chưa có câu hỏi kiểm tra nào cho bài này.</p>
+                  <button 
+                    onClick={() => {
+                        setSession({
+                            ...session,
+                            status: 'COMPLETED',
+                            finalScore: 10,
+                            progress: 100
+                        });
+                    }}
+                    className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-xl"
+                  >
+                    Bỏ qua & Hoàn thành
+                  </button>
+                </div>
+               ) : (
               <>
                 <div className="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100">
                   <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-xl flex items-center justify-center">
@@ -1291,7 +1354,7 @@ const handleStartSetup = () => {
                   </button>
                 </div>
               </>
-           ) : (
+           )) : (
               <div className="text-center py-12">
                 <div className="w-24 h-24 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mx-auto mb-6">
                   <BarChart2 size={48} />
