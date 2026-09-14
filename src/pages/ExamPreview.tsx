@@ -26,6 +26,7 @@ export function ExamPreview() {
 
   const [versionId, setVersionId] = useState<string | null>(null);
   const [errorDetails, setErrorDetails] = useState<{ part: string, required: number, actual: number } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!examConfig) return;
@@ -111,6 +112,52 @@ export function ExamPreview() {
 
   }, [examConfig, configId, examVersions, addExamVersion, allQuestions]);
 
+
+  const studentLink = versionId ? `${window.location.origin}/student/exam/${versionId}` : '';
+
+  const fallbackCopy = (text: string) => {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    textarea.style.pointerEvents = "none";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    const success = document.execCommand("copy");
+    document.body.removeChild(textarea);
+    if (!success) {
+      throw new Error("execCommand copy failed");
+    }
+    setCopied(true);
+    setTimeout(() => {
+      setCopied(false);
+    }, 2000);
+  };
+
+  const handleCopyLink = async () => {
+    if (!studentLink) return;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(studentLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+        return;
+      }
+      fallbackCopy(studentLink);
+    } catch (error) {
+      console.error("Clipboard copy failed:", error);
+      try {
+        fallbackCopy(studentLink);
+      } catch (fallbackError) {
+        console.error("Fallback copy failed:", fallbackError);
+        alert("Sao chép liên kết thất bại. Bạn có thể copy thủ công link sau:\n\n" + studentLink);
+      }
+    }
+  };
+
   if (!examConfig) return <div>Đề không tồn tại.</div>;
   if (errorDetails) {
     return (
@@ -147,7 +194,7 @@ export function ExamPreview() {
 
   if (!versionId) return <div>Đang tạo đề...</div>;
 
-  const studentLink = `${window.location.origin}/student/exam/${versionId}`;
+  
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -170,10 +217,11 @@ export function ExamPreview() {
             className="flex-1 bg-transparent outline-none text-slate-700 font-medium"
           />
           <button 
-            onClick={() => navigator.clipboard.writeText(studentLink)}
-            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium text-sm transition-colors"
+            type="button"
+            onClick={handleCopyLink}
+            className="px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 font-medium text-sm transition-colors min-w-[120px]"
           >
-            Copy
+            {copied ? "✓ Đã sao chép" : "Copy"}
           </button>
         </div>
 
