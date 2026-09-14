@@ -1,15 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { LineChart, Axis3D, Shapes, Target, Triangle, Maximize } from 'lucide-react';
+import { FunctionGraphLab } from './labs/FunctionGraphLab';
+import { FunctionAnalysisLab } from './labs/FunctionAnalysisLab';
+import { DerivativeLab } from './labs/DerivativeLab';
+import { IntegralLab } from './labs/IntegralLab';
+import { VectorLab } from './labs/VectorLab';
+import { OxyzLab } from './labs/OxyzLab';
 
 export function MathLab() {
+  const [activeLab, setActiveLab] = useState<string | null>(null);
+
   const tools = [
-    { id: 'graph', name: 'Đồ thị hàm số', icon: LineChart, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { id: 'analysis', name: 'Khảo sát hàm số', icon: Target, color: 'text-cyan-600', bg: 'bg-cyan-50' },
+    { id: 'function-graph', name: 'Đồ thị hàm số', icon: LineChart, color: 'text-indigo-600', bg: 'bg-indigo-50' },
+    { id: 'function-analysis', name: 'Khảo sát hàm số', icon: Target, color: 'text-cyan-600', bg: 'bg-cyan-50' },
     { id: 'derivative', name: 'Đạo hàm', icon: Maximize, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { id: 'integral', name: 'Tích phân', icon: Shapes, color: 'text-amber-600', bg: 'bg-amber-50' },
     { id: 'vector', name: 'Vector', icon: Triangle, color: 'text-purple-600', bg: 'bg-purple-50' },
     { id: 'oxyz', name: 'Oxyz', icon: Axis3D, color: 'text-pink-600', bg: 'bg-pink-50' },
   ];
+
+  const renderActiveLab = () => {
+    switch (activeLab) {
+      case 'function-graph': return <FunctionGraphLab onBack={() => setActiveLab(null)} />;
+      case 'function-analysis': return <FunctionAnalysisLab onBack={() => setActiveLab(null)} />;
+      case 'derivative': return <DerivativeLab onBack={() => setActiveLab(null)} />;
+      case 'integral': return <IntegralLab onBack={() => setActiveLab(null)} />;
+      case 'vector': return <VectorLab onBack={() => setActiveLab(null)} />;
+      case 'oxyz': return <OxyzLab onBack={() => setActiveLab(null)} />;
+      default: return null;
+    }
+  };
+
+  if (activeLab) {
+    return (
+      <div className="max-w-7xl mx-auto h-[calc(100vh-8rem)]">
+        {renderActiveLab()}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
@@ -17,10 +45,14 @@ export function MathLab() {
         <h2 className="text-3xl font-bold text-[#172033]">Phòng Lab Toán học</h2>
         <p className="text-slate-500 mt-2 text-lg">Khám phá và trực quan hóa các mô hình toán học.</p>
       </div>
-
+      
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {tools.map(tool => (
-          <button key={tool.id} className="bg-white p-4 rounded-[20px] shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3">
+          <button 
+            key={tool.id} 
+            onClick={() => setActiveLab(tool.id)}
+            className="bg-white p-4 rounded-[20px] shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tool.bg} ${tool.color}`}>
               <tool.icon size={24} />
             </div>
@@ -28,13 +60,12 @@ export function MathLab() {
           </button>
         ))}
       </div>
-
+      
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-[20px] shadow-sm border border-slate-200 p-6">
           <h3 className="text-xl font-bold text-slate-800 mb-6">Đồ thị hàm số: y = x³ - 3x</h3>
           <div className="bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-4 border border-slate-200">
             <svg viewBox="-5 -5 10 10" className="w-full max-w-sm h-auto drop-shadow-md">
-              {/* Grid */}
               <g stroke="#e2e8f0" strokeWidth="0.1">
                 {[-4, -3, -2, -1, 1, 2, 3, 4].map(i => (
                   <React.Fragment key={i}>
@@ -43,10 +74,8 @@ export function MathLab() {
                   </React.Fragment>
                 ))}
               </g>
-              {/* Axes */}
               <line x1="-5" y1="0" x2="5" y2="0" stroke="#94a3b8" strokeWidth="0.15" />
               <line x1="0" y1="-5" x2="0" y2="5" stroke="#94a3b8" strokeWidth="0.15" />
-              {/* Curve y = x^3 - 3x */}
               <path 
                 d="M -3 18 L -2.5 8.125 L -2 2 L -1.5 -1.125 L -1 -2 L -0.5 -1.375 L 0 0 L 0.5 1.375 L 1 2 L 1.5 1.125 L 2 -2 L 2.5 -8.125 L 3 -18" 
                 fill="none" 
@@ -58,7 +87,7 @@ export function MathLab() {
             </svg>
           </div>
         </div>
-
+        
         <div className="bg-white rounded-[20px] shadow-sm border border-slate-200 p-6">
           <h3 className="text-xl font-bold text-slate-800 mb-6">Hình học không gian: Hình chóp S.ABCD</h3>
           <div className="bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-4 border border-slate-200">

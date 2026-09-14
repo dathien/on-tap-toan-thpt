@@ -93,3 +93,21 @@ export interface AppSettings {
   description: string;
   schoolYear: string;
 }
+
+
+export interface Class {
+  id: string;
+  name: string;
+  grade: Grade | string | number;
+  schoolYear: string;
+  isDemo?: boolean;
+  description?: string;
+}
+
+export interface Student {
+  id: string;
+  fullName: string;
+  classId: string;
+  code?: string;
+  isDemo?: boolean;
+}
