@@ -27,6 +27,8 @@ import { LiveTracking } from './pages/LiveTracking';
 import { MathLab } from './pages/MathLab';
 import { ExamList } from './pages/ExamList';
 import { Roadmap } from './pages/Roadmap';
+import { TeacherResults } from './pages/TeacherResults';
+import { ClassManagement } from './pages/ClassManagement';
 
 export default function App() {
   const settings = useAppStore(state => state.settings);
@@ -93,8 +95,8 @@ export default function App() {
           <Route path="lab" element={<MathLab />} />
           <Route path="create" element={<CreateExam />} />
           <Route path="materials" element={<ExamList />} />
-          <Route path="results" element={<div className="p-4">Kết quả học tập (Đang phát triển)</div>} />
-          <Route path="classes" element={<div className="p-4">Lớp học (Đang phát triển)</div>} />
+          <Route path="results" element={<TeacherResults />} />
+          <Route path="classes" element={<ClassManagement />} />
         </Route>
 
         {/* Student Routes */}
