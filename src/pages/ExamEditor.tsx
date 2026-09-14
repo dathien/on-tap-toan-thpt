@@ -126,6 +126,11 @@ export function ExamEditor() {
           </button>
           <h2 className="text-2xl font-bold text-slate-800">Chỉnh sửa Đề thi</h2>
       </div>
+      <div className="flex justify-end mb-4">
+         <button onClick={() => navigate('/exam-preview/' + exam.id)} className="px-6 py-2.5 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-colors shadow-sm">
+            XEM TRƯỚC (PREVIEW)
+         </button>
+      </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
          <div>
@@ -200,6 +205,25 @@ export function ExamEditor() {
       </div>
       </div>
 
+      {version.questions.some(q => q.tags?.includes('imported')) && (
+        <div className="bg-indigo-50 rounded-2xl shadow-sm border border-indigo-200 p-6">
+            <h3 className="text-lg font-bold text-indigo-900 mb-4">Tổng kết nhận diện câu hỏi</h3>
+            <div className="flex gap-8">
+                <div className="text-indigo-800">
+                    Đã nhận diện: <strong>{version.questions.length} câu</strong>
+                </div>
+                <div className="text-emerald-700 font-medium">
+                    ✓ {version.questions.filter(q => !q._importError).length} câu hoàn chỉnh
+                </div>
+                {version.questions.filter(q => q._importError).length > 0 && (
+                    <div className="text-orange-700 font-medium">
+                        ⚠ {version.questions.filter(q => q._importError).length} câu cần kiểm tra
+                    </div>
+                )}
+            </div>
+        </div>
+      )}
+      
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
           <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-slate-800">Danh sách câu hỏi ({version.questions.length})</h3>

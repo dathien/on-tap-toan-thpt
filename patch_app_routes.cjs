@@ -1,17 +1,29 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf8');
 
-if (!code.includes('ExamEditor')) {
+// Add /exam-list if missing
+if (!code.includes('<Route path="exam-list"')) {
     code = code.replace(
-        "import { ExamPreview } from './pages/ExamPreview';",
-        "import { ExamPreview } from './pages/ExamPreview';\nimport { ExamEditor } from './pages/ExamEditor';"
+        '<Route path="materials" element={<ExamList />} />',
+        '<Route path="materials" element={<ExamList />} />\n          <Route path="exam-list" element={<ExamList />} />'
     );
-    code = code.replace(
-        "<Route path=\"exam-preview/:configId\" element={<ExamPreview />} />",
-        "<Route path=\"exam-preview/:configId\" element={<ExamPreview />} />\n          <Route path=\"exam-editor/:id\" element={<ExamEditor />} />"
-    );
-    fs.writeFileSync('src/App.tsx', code);
-    console.log("Routes added");
-} else {
-    console.log("Already added");
 }
+
+// Add /learning-path if missing
+if (!code.includes('<Route path="learning-path"')) {
+    code = code.replace(
+        '<Route path="roadmap" element={<Roadmap />} />',
+        '<Route path="roadmap" element={<Roadmap />} />\n          <Route path="learning-path" element={<Roadmap />} />'
+    );
+}
+
+// Add /question-bank if missing
+if (!code.includes('<Route path="question-bank"')) {
+    code = code.replace(
+        '<Route path="bank" element={<Bank />} />',
+        '<Route path="bank" element={<Bank />} />\n          <Route path="question-bank" element={<Bank />} />'
+    );
+}
+
+fs.writeFileSync('src/App.tsx', code);
+console.log("Patched App.tsx routes");

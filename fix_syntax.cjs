@@ -1,24 +1,36 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/pages/Roadmap.tsx', 'utf8');
+let code = fs.readFileSync('src/pages/CreateExam.tsx', 'utf8');
 
-// For diagnostic
-code = code.replace(
-    /<\/button>\n              <\/div>\n            <\/>\n          \) : \(\n            <div className="text-center py-12">/,
-    '</button>\n              </div>\n            </>\n          )) : (\n            <div className="text-center py-12">'
-);
+code = code.replace(`
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Số lượng câu (dự kiến)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  max="100"
+                  value={targetCount}
+                  onChange={e => setTargetCount(Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
 
-// For practice
-code = code.replace(
-    /<\/button>\n                      <\/div>\n                    <\/>\n                  \) : \(\n                    <div className="text-center p-8 bg-slate-50 border border-slate-200 rounded-xl">/,
-    '</button>\n                      </div>\n                    </>\n                  )) : (\n                    <div className="text-center p-8 bg-slate-50 border border-slate-200 rounded-xl">'
-);
+          <div className="h-px bg-slate-100" />
+          {/* Thiết lập nâng cao */}`, `
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Số lượng câu (dự kiến)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  max="100"
+                  value={targetCount}
+                  onChange={e => setTargetCount(Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                />
+              </div>
 
-// For final
-code = code.replace(
-    /<\/button>\n              <\/div>\n            <\/>\n          \) : \(\n            <div className="text-center py-12">/, // wait, final looks identical to diagnostic
-    '</button>\n              </div>\n            </>\n          )) : (\n            <div className="text-center py-12">'
-);
+          <div className="h-px bg-slate-100" />
+          {/* Thiết lập nâng cao */}`);
 
-
-fs.writeFileSync('src/pages/Roadmap.tsx', code);
-console.log("Fixed syntax");
+fs.writeFileSync('src/pages/CreateExam.tsx', code);

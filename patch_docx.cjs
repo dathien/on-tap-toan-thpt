@@ -1,4 +1,6 @@
-import JSZip from 'jszip';
+const fs = require('fs');
+
+const newCode = `import JSZip from 'jszip';
 import { Question } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,28 +19,28 @@ function ommlToLatex(ommlNode: Element): string {
         if (tag === 'f') { // Fraction
             const num = el.querySelector('fPr') ? el.querySelector('num') : el.querySelector('num');
             const den = el.querySelector('den');
-            latex += `\\frac{${num ? ommlToLatex(num) : ''}}{${den ? ommlToLatex(den) : ''}}`;
+            latex += \`\\\\frac{\${num ? ommlToLatex(num) : ''}}{\${den ? ommlToLatex(den) : ''}}\`;
         } else if (tag === 'rad') { // Radical
             const deg = el.querySelector('deg');
             const e = el.querySelector('e');
             if (deg && deg.textContent?.trim()) {
-                latex += `\\sqrt[${ommlToLatex(deg)}]{${e ? ommlToLatex(e) : ''}}`;
+                latex += \`\\\\sqrt[\${ommlToLatex(deg)}]{\${e ? ommlToLatex(e) : ''}}\`;
             } else {
-                latex += `\\sqrt{${e ? ommlToLatex(e) : ''}}`;
+                latex += \`\\\\sqrt{\${e ? ommlToLatex(e) : ''}}\`;
             }
         } else if (tag === 'sSup') { // Superscript
             const e = el.querySelector('e');
             const sup = el.querySelector('sup');
-            latex += `${e ? ommlToLatex(e) : ''}^{${sup ? ommlToLatex(sup) : ''}}`;
+            latex += \`\${e ? ommlToLatex(e) : ''}^{\${sup ? ommlToLatex(sup) : ''}}\`;
         } else if (tag === 'sSub') { // Subscript
             const e = el.querySelector('e');
             const sub = el.querySelector('sub');
-            latex += `${e ? ommlToLatex(e) : ''}_{${sub ? ommlToLatex(sub) : ''}}`;
+            latex += \`\${e ? ommlToLatex(e) : ''}_{\${sub ? ommlToLatex(sub) : ''}}\`;
         } else if (tag === 'sSubSup') { // Subscript and Superscript
             const e = el.querySelector('e');
             const sub = el.querySelector('sub');
             const sup = el.querySelector('sup');
-            latex += `${e ? ommlToLatex(e) : ''}_{${sub ? ommlToLatex(sub) : ''}}^{${sup ? ommlToLatex(sup) : ''}}`;
+            latex += \`\${e ? ommlToLatex(e) : ''}_{\${sub ? ommlToLatex(sub) : ''}}^{\${sup ? ommlToLatex(sup) : ''}}\`;
         } else if (tag === 'r') {
             const t = el.querySelector('t');
             if (t && t.textContent) {
@@ -76,18 +78,18 @@ function processNode(node: Node, imageMap: Map<string, string>): string {
                     if (blip) rId = blip.getAttribute('r:embed');
                     if (imagedata) rId = imagedata.getAttribute('r:id');
                     if (rId && imageMap.has(rId)) {
-                        pText += `<img src="${imageMap.get(rId)}" className="max-w-full h-auto mt-2 mb-2 rounded-lg" />`;
+                        pText += \`<img src="\${imageMap.get(rId)}" className="max-w-full h-auto mt-2 mb-2 rounded-lg" />\`;
                     }
                 });
             } else if (ctag === 'oMath') {
-                pText += `$${ommlToLatex(cel)}$`;
+                pText += \`$\${ommlToLatex(cel)}\$\`;
             } else if (ctag === 'oMathPara') {
                 cel.querySelectorAll('oMath').forEach(om => {
-                    pText += `$$${ommlToLatex(om)}$$`;
+                    pText += \`$$\${ommlToLatex(om)}\$\$\`;
                 });
             }
         }
-        return pText + '\n';
+        return pText + '\\n';
     } else if (tag === 'tbl') {
         let tblHtml = '<table className="w-full border-collapse border border-slate-300 mt-2 mb-2">';
         const trs = Array.from(el.childNodes).filter(n => n.nodeType === 1 && (n as Element).localName === 'tr');
@@ -98,13 +100,13 @@ function processNode(node: Node, imageMap: Map<string, string>): string {
                 tblHtml += '<td className="border border-slate-300 p-2">';
                 const ps = Array.from(tc.childNodes).filter(n => n.nodeType === 1 && (n as Element).localName === 'p');
                 ps.forEach(p => {
-                    tblHtml += processNode(p, imageMap).replace(/\n/g, '<br/>');
+                    tblHtml += processNode(p, imageMap).replace(/\\n/g, '<br/>');
                 });
                 tblHtml += '</td>';
             });
             tblHtml += '</tr>';
         });
-        tblHtml += '</table>\n';
+        tblHtml += '</table>\\n';
         return tblHtml;
     }
     return '';
@@ -124,12 +126,12 @@ export async function parseDocx(file: File): Promise<string> {
             const id = rel.getAttribute('Id');
             const target = rel.getAttribute('Target');
             if (id && target && target.startsWith('media/')) {
-                const imgFile = zip.file(`word/${target}`);
+                const imgFile = zip.file(\`word/\${target}\`);
                 if (imgFile) {
                     const ext = target.split('.').pop()?.toLowerCase();
                     const mimeType = ext === 'png' ? 'image/png' : ext === 'jpeg' || ext === 'jpg' ? 'image/jpeg' : 'image/png';
                     const base64 = await imgFile.async('base64');
-                    imageMap.set(id, `data:${mimeType};base64,${base64}`);
+                    imageMap.set(id, \`data:\${mimeType};base64,\${base64}\`);
                 }
             }
         }
@@ -162,16 +164,16 @@ export async function parseDocx(file: File): Promise<string> {
 
 export function extractQuestionsFromText(text: string, gradeId: number): Question[] {
     const questions: Question[] = [];
-    const lines = text.split('\n').map(l => l.trim()).filter(l => l !== '');
+    const lines = text.split('\\n').map(l => l.trim()).filter(l => l !== '');
     
     let currentQuestion: any = null;
     let currentOption: string | null = null;
     
-    const questionRegex = /^Câu\s+(\d+)[\.\:]\s*(.*)/i;
-    const optionRegexMCQ = /^(\*?)\s*([A-D])[\.\:\)]\s*(.*)/;
-    const optionRegexTF = /^(\*?)\s*([a-d])\)\s*(.*)/;
-    const answerRegex = /^(?:Đáp án|HDG|Hướng dẫn giải)[\:\.]\s*(.*)/i;
-    const explRegex = /^(?:Lời giải|Giải)[\:\.]\s*(.*)/i;
+    const questionRegex = /^Câu\\s+(\\d+)[\\.\\:]\\s*(.*)/i;
+    const optionRegexMCQ = /^(\\*?)\\s*([A-D])[\\.\\:\\)]\\s*(.*)/;
+    const optionRegexTF = /^(\\*?)\\s*([a-d])\\)\\s*(.*)/;
+    const answerRegex = /^(?:Đáp án|HDG|Hướng dẫn giải)[\\:\\.]\\s*(.*)/i;
+    const explRegex = /^(?:Lời giải|Giải)[\\:\\.]\\s*(.*)/i;
 
     for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -378,3 +380,7 @@ function finalizeQuestion(qDraft: any, questions: Question[], gradeId: number) {
         questions.push(shortQ);
     }
 }
+`
+
+fs.writeFileSync('src/utils/docxParser.ts', newCode);
+console.log("Updated docxParser.ts");

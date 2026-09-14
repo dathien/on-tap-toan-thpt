@@ -82,6 +82,7 @@ export default function App() {
           <Route index element={<Dashboard />} />
           <Route path="settings" element={<Settings />} />
           <Route path="roadmap" element={<Roadmap />} />
+          <Route path="learning-path" element={<Roadmap />} />
           <Route path="review" element={<Review />} />
           <Route path="review-space/:type" element={<ReviewSpace />} />
           <Route path="review-space/:type/theory" element={<TheoryLesson />} />
@@ -90,6 +91,7 @@ export default function App() {
           <Route path="exam-preview/:configId" element={<ExamPreview />} />
           <Route path="exam-editor/:id" element={<ExamEditor />} />
           <Route path="bank" element={<Bank />} />
+          <Route path="question-bank" element={<Bank />} />
           <Route path="bank/import" element={<WordImport />} />
           <Route path="bank/add" element={<QuestionEditor />} />
           <Route path="bank/edit/:id" element={<QuestionEditor />} />
@@ -99,6 +101,7 @@ export default function App() {
           <Route path="treasure" element={<TreasureHunt />} />
           <Route path="create" element={<CreateExam />} />
           <Route path="materials" element={<ExamList />} />
+          <Route path="exam-list" element={<ExamList />} />
           <Route path="results" element={<TeacherResults />} />
           <Route path="classes" element={<ClassManagement />} />
         </Route>

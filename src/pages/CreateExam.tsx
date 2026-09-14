@@ -4,6 +4,9 @@ import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { ExamConfig, Grade } from '../types';
 import { Settings2, BookOpen, Database, FileText, PenTool, Loader2 , CheckCircle2, X } from 'lucide-react';
+import { QuestionBankSelector } from '../components/QuestionBankSelector';
+import { ManualQuestionForm } from '../components/ManualQuestionForm';
+import { Question } from '../types';
 import { parseDocx, extractQuestionsFromText } from '../utils/docxParser';
 
 export function CreateExam() {
@@ -25,6 +28,11 @@ export function CreateExam() {
   const [isParsing, setIsParsing] = useState(false);
   const [parseStatus, setParseStatus] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [draftBankQuestions, setDraftBankQuestions] = useState<Question[]>([]);
+  const [draftManualQuestions, setDraftManualQuestions] = useState<Question[]>([]);
+  const [targetCount, setTargetCount] = useState(10);
+  const [saveToBank, setSaveToBank] = useState(false);
+
   
   const addExamVersion = useAppStore(state => state.addExamVersion);
 
@@ -81,9 +89,36 @@ export function CreateExam() {
         setIsParsing(false);
         alert("Không thể đọc file Word này: " + err.message);
       }
-    } else {
+        } else if (source === 'BANK') {
+      if (draftBankQuestions.length === 0) {
+        alert("Vui lòng chọn ít nhất 1 câu hỏi từ Ngân hàng!");
+        return;
+      }
       addExam(newExam);
-      navigate(`/exam-preview/${newExam.id}`);
+      addExamVersion({
+        id: uuidv4(),
+        examConfigId: newExam.id,
+        questions: draftBankQuestions
+      });
+      navigate(`/exam-editor/${newExam.id}`);
+    } else if (source === 'MANUAL') {
+      if (draftManualQuestions.length === 0) {
+        alert("Vui lòng nhập ít nhất 1 câu hỏi!");
+        return;
+      }
+      
+      if (saveToBank) {
+         const store = useAppStore.getState();
+         draftManualQuestions.forEach(q => store.addQuestion(q));
+      }
+      
+      addExam(newExam);
+      addExamVersion({
+        id: uuidv4(),
+        examConfigId: newExam.id,
+        questions: draftManualQuestions
+      });
+      navigate(`/exam-editor/${newExam.id}`);
     }
   };
 
@@ -189,11 +224,15 @@ export function CreateExam() {
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Số lượng câu (dự kiến)</label>
+                <input type="number" min="1" max="100" value={targetCount} onChange={e => setTargetCount(Number(e.target.value))} className="w-full px-4 py-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all" />
+              </div>
             </div>
           </div>
 
           <div className="h-px bg-slate-100" />
-
           {/* Thiết lập nâng cao */}
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -297,9 +336,30 @@ export function CreateExam() {
                    }
                 }}
               />
-                        </div>
+                                    </div>
           </div>
           
+          {source === 'BANK' && (
+             <QuestionBankSelector 
+                selectedQuestions={draftBankQuestions} 
+                onChange={setDraftBankQuestions} 
+                targetCount={targetCount}
+             />
+          )}
+
+          {source === 'MANUAL' && (
+             <>
+               <ManualQuestionForm 
+                  questions={draftManualQuestions} 
+                  onChange={setDraftManualQuestions} 
+               />
+               <label className="flex items-center gap-3 mt-4 p-4 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-slate-100 transition-colors">
+                  <input type="checkbox" checked={saveToBank} onChange={e => setSaveToBank(e.target.checked)} className="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500" />
+                  <div className="font-bold text-slate-700">Lưu các câu hỏi này vào Ngân hàng gốc</div>
+               </label>
+             </>
+          )}
+
           {source === 'WORD' && file && (
             <div className="mt-4 p-4 border border-indigo-200 bg-indigo-50 rounded-xl flex items-center justify-between">
                <div className="flex items-center gap-3">
