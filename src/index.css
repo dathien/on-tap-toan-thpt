@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/* Variation Table Math Wrapping Fix */
+.math-token {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    word-break: keep-all;
+    overflow-wrap: normal;
+    flex-wrap: nowrap;
+    min-width: max-content;
+}
+
+.variation-table .katex,
+.variation-table .katex-html {
+    white-space: nowrap !important;
+}
+
+.variation-table .math-renderer {
+    display: inline-block;
+    white-space: nowrap !important;
+    width: max-content;
+}
+
+.variation-table .grid > div, .variation-table .flex > div {
+    white-space: nowrap;
+}
+
+.variation-table .x-point {
+    min-width: 56px;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.variation-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.variation-table {
+    min-width: 520px;
+}
