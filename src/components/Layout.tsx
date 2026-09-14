@@ -30,6 +30,8 @@ const navItems = [
   { id: 'results', label: 'Kết quả học tập', icon: BarChart3, path: '/results' },
   { id: 'classes', label: 'Lớp học', icon: Users, path: '/classes' },
   { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
+
+  { id: 'treasure', label: 'Kho báu Toán học', icon: Gem, path: '/treasure' },
 ];
 
 export function Layout() {

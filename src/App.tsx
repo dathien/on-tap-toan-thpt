@@ -9,6 +9,7 @@ import { sanitizeQuestionText } from './utils/textSanitizer';
 import { useAppStore } from './store/useAppStore';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
+import { TreasureHunt } from './pages/TreasureHunt';
 import { Settings } from './pages/Settings';
 import { Review } from './pages/Review';
 import { ExamBuilder } from './pages/ExamBuilder';
@@ -93,6 +94,7 @@ export default function App() {
           
           <Route path="exam" element={<LiveTracking />} />
           <Route path="lab" element={<MathLab />} />
+          <Route path="treasure" element={<TreasureHunt />} />
           <Route path="create" element={<CreateExam />} />
           <Route path="materials" element={<ExamList />} />
           <Route path="results" element={<TeacherResults />} />
