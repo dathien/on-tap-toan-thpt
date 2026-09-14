@@ -5,6 +5,8 @@ import { MathText } from '../components/MathText';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { Question, McqQuestion, TrueFalseGroupQuestion, ShortAnswerQuestion } from '../types';
+import { Edit } from 'lucide-react';
+import { QuestionEditorModal } from '../components/QuestionEditorModal';
 
 export function StudentExam() {
   const { attemptId } = useParams<{ attemptId: string }>();
@@ -14,6 +16,9 @@ export function StudentExam() {
   const examVersions = useAppStore(state => state.examVersions);
   const exams = useAppStore(state => state.exams);
   const updateAttempt = useAppStore(state => state.updateAttempt);
+  const isTeacherMode = useAppStore(state => state.isTeacherMode);
+  const [editingQuestion, setEditingQuestion] = React.useState<any>(null);
+  const updateQuestion = useAppStore(state => state.updateQuestion);
 
   const attempt = attempts.find(a => a.id === attemptId);
   const version = examVersions.find(v => v.id === attempt?.examVersionId);
@@ -24,6 +29,15 @@ export function StudentExam() {
   const [answers, setAnswers] = useState<Record<string, any>>(attempt?.answers || {});
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCheatWarning, setShowCheatWarning] = useState(false);
+  const [tabId] = useState(() => {
+    let id = sessionStorage.getItem('exam_tab_' + attemptId);
+    if (!id) {
+      id = crypto.randomUUID();
+      sessionStorage.setItem('exam_tab_' + attemptId, id);
+    }
+    return id;
+  });
 
   const answeredCount = useMemo(() => {
     if (!version) return 0;
@@ -62,6 +76,95 @@ export function StudentExam() {
     return () => clearInterval(interval);
   }, [attempt, version, config, navigate]);
 
+  
+  // Anti-cheat: Multiple tab detection
+  useEffect(() => {
+    if (!attempt || attempt.status !== 'IN_PROGRESS' || !attemptId) return;
+
+    let isViolationProcessed = false;
+    let channel: BroadcastChannel | null = null;
+    let heartbeat: NodeJS.Timeout | null = null;
+
+    const handleViolation = (detectedTabId: string) => {
+        if (isViolationProcessed) return;
+        isViolationProcessed = true;
+        
+        // Use a functional state update equivalent to get latest attempt state
+        // Actually, since we need to update the attempt in the store:
+        // We will just read from the current attempt via closure, but it might be stale.
+        // It's safer to get it from the store directly if we can, but since this effect depends on currentIndex,
+        // we can just use the current question index.
+        const currentQ = version?.questions[currentIndex];
+        
+        if (currentQ) {
+            const currentAttempt = useAppStore.getState().attempts.find(a => a.id === attemptId);
+            if (currentAttempt) {
+                updateAttempt(attemptId, {
+                  antiCheatEvents: [
+                    ...(currentAttempt.antiCheatEvents || []),
+                    { type: 'MULTIPLE_TAB', questionId: currentQ.id, questionIndex: currentIndex + 1, timestamp: Date.now(), tabId: detectedTabId }
+                  ],
+                  forcedZeroQuestions: {
+                    ...(currentAttempt.forcedZeroQuestions || {}),
+                    [currentQ.id]: true
+                  }
+                });
+            }
+        }
+        
+        setShowCheatWarning(true);
+        
+        setTimeout(() => {
+            isViolationProcessed = false;
+        }, 5000);
+    };
+
+    try {
+        channel = new BroadcastChannel(`exam_session_${attemptId}`);
+        channel.onmessage = (event) => {
+            if (event.data && (event.data.type === 'TAB_ACTIVE' || event.data.type === 'HEARTBEAT')) {
+                if (event.data.tabId !== tabId) {
+                    handleViolation(event.data.tabId);
+                }
+            }
+        };
+
+        channel.postMessage({ type: 'TAB_ACTIVE', attemptId, tabId, timestamp: Date.now() });
+        
+        heartbeat = setInterval(() => {
+            channel?.postMessage({ type: 'HEARTBEAT', attemptId, tabId, timestamp: Date.now() });
+            
+            // Fallback: localStorage
+            const storageKey = `exam_active_${attemptId}`;
+            localStorage.setItem(storageKey, JSON.stringify({ tabId, timestamp: Date.now() }));
+        }, 3000);
+    } catch (e) {
+        console.error("Anti-cheat error:", e);
+    }
+    
+    const onStorage = (e: StorageEvent) => {
+        const storageKey = `exam_active_${attemptId}`;
+        if (e.key === storageKey && e.newValue) {
+            try {
+                const data = JSON.parse(e.newValue);
+                if (data.tabId && data.tabId !== tabId) {
+                    if (Date.now() - data.timestamp < 5000) {
+                       handleViolation(data.tabId);
+                    }
+                }
+            } catch (err) {}
+        }
+    };
+    
+    window.addEventListener('storage', onStorage);
+    
+    return () => {
+        if (channel) channel.close();
+        if (heartbeat) clearInterval(heartbeat);
+        window.removeEventListener('storage', onStorage);
+    };
+  }, [attemptId, tabId, attempt?.status, currentIndex, version?.questions]);
+
   // Anti-cheat: Track visibility
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -94,7 +197,7 @@ export function StudentExam() {
         answers
       });
       
-      gradeAttempt(attempt.id, answers, version!.questions);
+      gradeAttempt(attempt.id, answers, version!.questions, attempt.forcedZeroQuestions || {});
       navigate(`/student/result/${attempt.id}`, { replace: true });
     } catch (error) {
       console.error("SUBMIT_EXAM_ERROR", error);
@@ -113,7 +216,7 @@ export function StudentExam() {
     setShowSubmitModal(true);
   };
 
-  const gradeAttempt = (id: string, ans: any, questions: Question[]) => {
+  const gradeAttempt = (id: string, ans: any, questions: Question[], forcedZero: Record<string, boolean> = {}) => {
     let score = 0;
     let totalQuestions = questions.length;
     let maxScore = 10;
@@ -121,6 +224,9 @@ export function StudentExam() {
     let correctCount = 0;
     
     questions.forEach(q => {
+      if (forcedZero[q.id]) {
+        return;
+      }
       if (q.question_type === 'MCQ_SINGLE') {
         const mcq = q as McqQuestion;
         const correctOpt = mcq.options.find(o => o.isCorrect);
@@ -242,10 +348,20 @@ export function StudentExam() {
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
           <div className="mb-6 flex justify-between items-center border-b border-slate-100 pb-4">
             <span className="font-bold text-indigo-600">Câu {currentIndex + 1} / {version.questions.length}</span>
-            <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-              {currentQuestion.question_type === 'MCQ_SINGLE' ? 'Nhiều phương án' : 
-               currentQuestion.question_type === 'TRUE_FALSE_GROUP' ? 'Đúng/Sai' : 'Trả lời ngắn'}
-            </span>
+            <div className="flex gap-2">
+              {isTeacherMode && (
+                <button 
+                  onClick={() => setEditingQuestion(currentQuestion)}
+                  className="flex items-center gap-1 text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full hover:bg-indigo-100"
+                >
+                  <Edit size={14} /> Sửa câu này
+                </button>
+              )}
+              <span className="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                {currentQuestion.question_type === 'MCQ_SINGLE' ? 'Nhiều phương án' : 
+                 currentQuestion.question_type === 'TRUE_FALSE_GROUP' ? 'Đúng/Sai' : 'Trả lời ngắn'}
+              </span>
+            </div>
           </div>
 
           <div className="text-lg text-slate-800 mb-8 overflow-x-auto">
@@ -364,6 +480,32 @@ export function StudentExam() {
         </button>
       </div>
 
+      
+      {/* Cheat Warning Modal */}
+      {showCheatWarning && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-red-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 animate-in fade-in zoom-in-95 duration-200 border-2 border-red-500">
+            <div className="flex items-center justify-center w-16 h-16 bg-red-100 text-red-600 rounded-full mx-auto mb-4">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-slate-800 text-center mb-2">⚠️ CẢNH BÁO GIAN LẬN</h3>
+            <p className="text-slate-600 text-center mb-6">
+              Hệ thống phát hiện bài kiểm tra này đang được mở ở nhiều hơn một tab.<br/><br/>
+              Nếu tiếp tục sử dụng nhiều tab, câu hỏi bạn đang làm sẽ bị chấm 0 điểm.
+            </p>
+            <button 
+              onClick={() => setShowCheatWarning(false)}
+              className="w-full px-5 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors shadow-sm"
+            >
+              ĐÓNG TAB KHÁC VÀ TIẾP TỤC
+            </button>
+          </div>
+        </div>
+      )}
+
+
       {/* Submit Modal */}
       {showSubmitModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
@@ -408,6 +550,23 @@ export function StudentExam() {
         </div>
       )}
 
+      {editingQuestion && (
+        <QuestionEditorModal
+          initialQuestion={editingQuestion}
+          onCancel={() => setEditingQuestion(null)}
+          onSave={(mode, updatedQ) => {
+            updateQuestion(updatedQ.id, updatedQ);
+            
+            // Also update the current exam version so it takes effect immediately
+            if (version) {
+              const newQuestions = version.questions.map(q => q.id === updatedQ.id ? updatedQ : q);
+              useAppStore.getState().updateExamVersion(version.id, { questions: newQuestions });
+            }
+            
+            setEditingQuestion(null);
+          }}
+        />
+      )}
     </div>
   );
 }

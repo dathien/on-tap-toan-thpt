@@ -1,14 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { 
-  Rocket, Zap, BookOpen, PenTool, CheckCircle2, 
-  BarChart2, RotateCcw, ChevronLeft, ArrowRight, Play, CheckCircle
-} from 'lucide-react';
+import { Rocket, Zap, BookOpen, PenTool, CheckCircle2, BarChart2, RotateCcw, ChevronLeft, ArrowRight, Play, CheckCircle, Gamepad2, User, FileText } from 'lucide-react';
 import { MathText } from '../components/MathText';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { Question, LearningSession, LearningUnit } from '../types';
+import { QuestionEditorModal } from '../components/QuestionEditorModal';
+import { Edit } from 'lucide-react';
 import clsx from 'clsx';
 
 // Shared Curriculum Data
@@ -227,7 +227,8 @@ const generateUnitsForTopic = (topic: string): LearningUnit[] => {
 };
 
 export function Roadmap() {
-  const { currentGrade, questions } = useAppStore();
+  const { currentGrade, questions, isTeacherMode, updateQuestion } = useAppStore();
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   
 // Setup Form State
   const [selectedGrade, setSelectedGrade] = useState<number>(12);
@@ -257,6 +258,8 @@ export function Roadmap() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizScore, setQuizScore] = useState(0);
   const [learningStep, setLearningStep] = useState<'THEORY' | 'EXAMPLE' | 'PRACTICE'>('THEORY');
+  const [view, setView] = useState<'HOME' | 'SETUP' | 'SESSION'>('HOME');
+  const navigate = useNavigate();
 
   // Save session on change
   useEffect(() => {
@@ -288,6 +291,7 @@ const handleStartSetup = () => {
     setSession(newSession);
     setQuizAnswers({});
     setQuizSubmitted(false);
+    setView('SESSION');
   };
 
   const quitSession = () => {
@@ -296,16 +300,121 @@ const handleStartSetup = () => {
     }
   };
 
+
+  const handleCardAction = (type: string) => {
+    if (!session && type !== 'SETUP') {
+      if (window.confirm('Bạn cần bắt đầu một lộ trình mới để sử dụng chức năng này. Bắt đầu ngay?')) {
+        setSession(null);
+        setView('SETUP');
+      }
+      return;
+    }
+
+    switch (type) {
+      case 'SETUP':
+        setSession(null);
+        setView('SETUP');
+        break;
+      case 'DIAGNOSTIC':
+        setSession({ ...session!, status: 'DIAGNOSTIC' });
+        setView('SESSION');
+        break;
+      case 'THEORY':
+        setSession({ ...session!, status: 'LEARNING' });
+        setLearningStep('THEORY');
+        setView('SESSION');
+        break;
+      case 'PRACTICE':
+        setSession({ ...session!, status: 'LEARNING' });
+        setLearningStep('PRACTICE');
+        setView('SESSION');
+        break;
+      case 'ASSESSMENT':
+        setSession({ ...session!, status: 'ASSESSMENT' });
+        setView('SESSION');
+        break;
+      case 'COMPLETED':
+        setSession({ ...session!, status: 'COMPLETED' });
+        setView('SESSION');
+        break;
+      case 'RETRY':
+        if (session!.status !== 'COMPLETED') {
+            alert('Bạn cần hoàn thành lộ trình hiện tại để xem phần học lại.');
+            return;
+        }
+        // Logic for retry could reset status or just go to learning step
+        setSession({ ...session!, status: 'LEARNING' });
+        setLearningStep('PRACTICE');
+        setView('SESSION');
+        break;
+    }
+  };
+
+  const renderHome = () => {
+    const cards = [
+      { id: 'start', icon: Rocket, title: 'BẮT ĐẦU', desc: 'Bắt đầu một lộ trình học mới', color: 'text-indigo-600', bg: 'bg-indigo-100', action: () => handleCardAction('SETUP') },
+      { id: 'diagnostic', icon: Zap, title: 'KHỞI ĐỘNG', desc: 'Chẩn đoán nhanh kiến thức', color: 'text-orange-600', bg: 'bg-orange-100', action: () => handleCardAction('DIAGNOSTIC') },
+      { id: 'theory', icon: BookOpen, title: 'KIẾN THỨC', desc: 'Xem lý thuyết trọng tâm', color: 'text-blue-600', bg: 'bg-blue-100', action: () => handleCardAction('THEORY') },
+      { id: 'practice', icon: PenTool, title: 'LUYỆN TẬP', desc: 'Luyện bài theo chủ đề', color: 'text-emerald-600', bg: 'bg-emerald-100', action: () => handleCardAction('PRACTICE') },
+      { id: 'game', icon: Gamepad2, title: 'TRÒ CHƠI', desc: 'Ôn tập qua trò chơi Toán học', color: 'text-purple-600', bg: 'bg-purple-100', action: () => navigate('/treasure') },
+      { id: 'assessment', icon: CheckCircle2, title: 'KIỂM TRA', desc: 'Kiểm tra mức độ nắm kiến thức', color: 'text-rose-600', bg: 'bg-rose-100', action: () => handleCardAction('ASSESSMENT') },
+      { id: 'results', icon: BarChart2, title: 'KẾT QUẢ', desc: 'Xem kết quả và tiến bộ', color: 'text-teal-600', bg: 'bg-teal-100', action: () => handleCardAction('COMPLETED') },
+      { id: 'retry', icon: RotateCcw, title: 'HỌC LẠI', desc: 'Ôn lại phần chưa vững', color: 'text-amber-600', bg: 'bg-amber-100', action: () => handleCardAction('RETRY') },
+      { id: 'profile', icon: User, title: 'HỒ SƠ HỌC TẬP', desc: 'Xem quá trình học cá nhân', color: 'text-cyan-600', bg: 'bg-cyan-100', action: () => alert('Tính năng đang được phát triển') },
+      { id: 'report', icon: FileText, title: 'BÁO CÁO GV', desc: 'Giáo viên xem tiến độ học tập', color: 'text-slate-600', bg: 'bg-slate-100', action: () => alert('Tính năng dành cho giáo viên') },
+    ];
+
+    return (
+      <div className="max-w-6xl mx-auto space-y-8 pb-12 mt-8 animate-fade-in">
+        <div className="text-center mb-10">
+          <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-wide">Lộ Trình Tự Học</h2>
+          <p className="text-slate-500 mt-2 font-medium">Học sâu • Luyện tập • Kiểm tra • Cải thiện</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {cards.map((card) => {
+            const Icon = card.icon;
+            return (
+              <div 
+                key={card.id}
+                onClick={card.action}
+                className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md hover:border-indigo-300 transition-all cursor-pointer group flex flex-col items-center text-center"
+              >
+                <div className={`w-16 h-16 rounded-2xl ${card.bg} ${card.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <Icon className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-bold text-slate-800 mb-2">{card.title}</h3>
+                <p className="text-sm text-slate-500 font-medium">{card.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+
 // ---------------------------------------------------------------------------
   // RENDER: SETUP
   // ---------------------------------------------------------------------------
-  if (!session || session.status === 'SETUP') {
+  if (view === 'HOME') {
+    return renderHome();
+  }
+
+  if (view === 'SETUP') {
     const availableTopics = demoCurriculum[selectedGrade as keyof typeof demoCurriculum] || [];
     const selectedTopicObj = availableTopics.find(t => t.id === selectedTopic);
     const availableLessons = selectedTopicObj ? selectedTopicObj.lessons : [];
     
     return (
-      <div className="max-w-3xl mx-auto space-y-8 pb-12 mt-8">
+      <div className="max-w-3xl mx-auto space-y-8 pb-12 mt-8 animate-fade-in">
+        <button 
+          onClick={() => setView('HOME')} 
+          className="flex items-center text-slate-500 hover:text-indigo-600 font-bold mb-2 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          QUAY LẠI TỔNG QUAN
+        </button>
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-wide">Thiết lập Lộ trình</h2>
           <p className="text-slate-500 mt-2">Hệ thống sẽ cá nhân hóa bài học dựa trên lựa chọn của bạn</p>
@@ -452,6 +561,16 @@ const handleStartSetup = () => {
     if (session.status === 'COMPLETED') currentStepIdx = 3;
 
     return (
+      <>
+        <div className="mb-4">
+        <button 
+          onClick={() => setView('HOME')} 
+          className="flex items-center text-slate-500 hover:text-indigo-600 font-bold transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5 mr-1" />
+          LỘ TRÌNH TỰ HỌC
+        </button>
+      </div>
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -490,6 +609,7 @@ const handleStartSetup = () => {
           </div>
         </div>
       </div>
+      </>
     );
   };
 
@@ -525,7 +645,8 @@ const handleStartSetup = () => {
           progress: 20
         });
         setQuizAnswers({});
-        setQuizSubmitted(false);
+    setQuizSubmitted(false);
+    setView('SESSION');
         setLearningStep('THEORY');
       }, 3000);
     };
@@ -667,7 +788,8 @@ const handleStartSetup = () => {
       }
       
       setQuizAnswers({});
-      setQuizSubmitted(false);
+    setQuizSubmitted(false);
+    setView('SESSION');
     };
 
     return (
@@ -913,7 +1035,8 @@ const handleStartSetup = () => {
             progress: 20
           });
           setQuizAnswers({});
-          setQuizSubmitted(false);
+    setQuizSubmitted(false);
+    setView('SESSION');
           setLearningStep('THEORY');
           alert('Chưa đạt mục tiêu. Hệ thống đã tạo lại lộ trình ôn tập các phần còn yếu.');
         }, 3000);
@@ -1056,6 +1179,16 @@ const handleStartSetup = () => {
             Tạo lộ trình mới
           </button>
        </div>
+      {editingQuestion && (
+        <QuestionEditorModal
+          initialQuestion={editingQuestion}
+          onCancel={() => setEditingQuestion(null)}
+          onSave={(mode, updatedQ) => {
+            updateQuestion(updatedQ.id, updatedQ);
+            setEditingQuestion(null);
+          }}
+        />
+      )}
     </div>
   );
 }

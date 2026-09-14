@@ -23,6 +23,7 @@ export interface BaseQuestion {
   difficulty: 1 | 2 | 3 | 4; // 1: Nhận biết, 2: Thông hiểu, 3: Vận dụng, 4: Vận dụng cao
   content: string; // LaTeX content
   visual?: VisualConfig;
+  explanation?: string;
   tags: string[];
 }
 
@@ -85,6 +86,8 @@ export interface StudentAttempt {
   score: number | null;
   status: 'IN_PROGRESS' | 'SUBMITTED' | 'AUTO_SUBMITTED';
   focusEvents: { event: 'blur' | 'focus'; timestamp: number }[];
+  antiCheatEvents?: { type: 'MULTIPLE_TAB'; questionId?: string; questionIndex?: number; timestamp: number; tabId: string }[];
+  forcedZeroQuestions?: Record<string, boolean>;
 }
 
 export interface AppSettings {

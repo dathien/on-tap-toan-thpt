@@ -190,8 +190,31 @@ export function TeacherResults() {
                       <div>
                         <div className="font-semibold text-slate-800">{(exam as any)?.name || 'Bài thi'}</div>
                         <div className="text-sm text-slate-500 mt-1">{new Date(attempt.date).toLocaleDateString('vi-VN')} • {attempt.timeSpent} phút</div>
+                        {attempt.antiCheatEvents?.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {attempt.antiCheatEvents.map((evt: any, i: number) => (
+                              <div key={i} className="text-xs font-medium text-red-600 bg-red-50 inline-block px-2 py-1 rounded">
+                                ⚠️ Cảnh báo: Phát hiện mở nhiều tab tại câu {evt.questionId || 'đang làm'} lúc {new Date(evt.timestamp).toLocaleTimeString('vi-VN')}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-xl font-bold text-indigo-600">{attempt.score.toFixed(1)}</div>
+                      <div className="flex items-center gap-4">
+                        {attempt.antiCheatEvents?.length > 0 && (
+                          <div className="text-red-500 flex items-center gap-1 text-sm bg-red-50 px-2 py-1 rounded-lg" title="Phát hiện mở nhiều tab">
+                            <AlertCircle size={16} /> <span className="hidden sm:inline">Vi phạm</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-4">
+                        {attempt.antiCheatEvents?.length > 0 && (
+                          <div className="text-red-500 flex items-center gap-1 text-sm bg-red-50 px-2 py-1 rounded-lg" title="Phát hiện mở nhiều tab">
+                            <AlertCircle size={16} /> <span className="hidden sm:inline">Vi phạm</span>
+                          </div>
+                        )}
+                        <div className="text-xl font-bold text-indigo-600">{attempt.score.toFixed(1)}</div>
+                      </div>
+                      </div>
                     </div>
                   );
                 })}
@@ -290,10 +313,26 @@ export function TeacherResults() {
                       <div>
                         <div className="font-semibold text-slate-800">{student?.name || 'Học sinh'}</div>
                         <div className="text-sm text-slate-500 mt-1">{attempt.timeSpent} phút • {new Date(attempt.date).toLocaleDateString('vi-VN')}</div>
+                        {attempt.antiCheatEvents?.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {attempt.antiCheatEvents.map((evt: any, i: number) => (
+                              <div key={i} className="text-xs font-medium text-red-600 bg-red-50 inline-block px-2 py-1 rounded">
+                                ⚠️ Cảnh báo: Phát hiện mở nhiều tab tại câu {evt.questionId || 'đang làm'} lúc {new Date(evt.timestamp).toLocaleTimeString('vi-VN')}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className={clsx("text-xl font-bold", attempt.score >= 8 ? "text-emerald-600" : attempt.score >= 6.5 ? "text-indigo-600" : attempt.score >= 5 ? "text-amber-500" : "text-red-500")}>
-                        {attempt.score.toFixed(1)}
-                      </div>
+                      <div className="flex items-center gap-4">
+    {attempt.antiCheatEvents?.length > 0 && (
+      <div className="text-red-500 flex items-center gap-1 text-sm bg-red-50 px-2 py-1 rounded-lg" title="Phát hiện mở nhiều tab">
+        <AlertCircle size={16} /> <span className="hidden sm:inline">Vi phạm</span>
+      </div>
+    )}
+    <div className={clsx("text-xl font-bold", attempt.score >= 8 ? "text-emerald-600" : attempt.score >= 6.5 ? "text-indigo-600" : attempt.score >= 5 ? "text-amber-500" : "text-red-500")}>
+      {attempt.score.toFixed(1)}
+    </div>
+  </div>
                     </div>
                   );
                 })}

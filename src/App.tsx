@@ -17,6 +17,7 @@ import { ReviewSpace } from './pages/ReviewSpace';
 import { TheoryLesson } from './pages/TheoryLesson';
 import { PracticeConfig } from './pages/PracticeConfig';
 import { ExamPreview } from './pages/ExamPreview';
+import { ExamEditor } from './pages/ExamEditor';
 import { CreateExam } from './pages/CreateExam';
 import { Bank } from './pages/Bank';
 import { QuestionEditor } from './pages/QuestionEditor';
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="review-space/:type/practice" element={<PracticeConfig />} />
           <Route path="builder/:type" element={<ExamBuilder />} />
           <Route path="exam-preview/:configId" element={<ExamPreview />} />
+          <Route path="exam-editor/:id" element={<ExamEditor />} />
           <Route path="bank" element={<Bank />} />
           <Route path="bank/import" element={<WordImport />} />
           <Route path="bank/add" element={<QuestionEditor />} />

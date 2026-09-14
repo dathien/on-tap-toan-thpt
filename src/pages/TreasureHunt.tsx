@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Compass, Search, Zap, Trophy, Crown, Gem, CheckCircle2, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
 import { MathText } from '../components/MathText';
+import { QuestionEditorModal } from '../components/QuestionEditorModal';
+import { Edit } from 'lucide-react';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { Question } from '../types';
@@ -41,6 +43,9 @@ export function TreasureHunt() {
   const [questionStartTime, setQuestionStartTime] = useState<number>(Date.now());
 
   const [playedQuestionIds, setPlayedQuestionIds] = useState<Set<string>>(new Set());
+  const isTeacherMode = useAppStore(state => state.isTeacherMode);
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const updateQuestion = useAppStore(state => state.updateQuestion);
 
 
   const loadLevel = (levelId: number) => {
@@ -267,7 +272,15 @@ export function TreasureHunt() {
           </div>
         </div>
 
-        <div className="question-card bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+        <div className="question-card bg-white p-8 rounded-2xl shadow-sm border border-slate-200 relative">
+          {isTeacherMode && (
+              <button 
+                onClick={() => setEditingQuestion(q)}
+                className="absolute top-4 right-4 flex items-center gap-1 text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-full hover:bg-indigo-100"
+              >
+                <Edit size={14} /> Sửa câu này
+              </button>
+          )}
           <div className="question-content question-text text-lg text-slate-800 mb-6">
             <MathText text={sanitizeQuestionText(q.content)} />
           </div>

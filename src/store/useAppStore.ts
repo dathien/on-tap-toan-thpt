@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { AppSettings, Grade, StudentAttempt, ExamConfig, ExamVersion, Question, Class, Student } from '../types';
 import { demoQuestions } from '../data/demoQuestions';
+import { validateQuestionMath } from '../utils/mathValidator';
 
 const DEMO_CLASSES: Class[] = [
   { id: 'c_10a1', name: '10A1', grade: 10, schoolYear: '2026-2027', isDemo: true, description: 'Lớp chọn khối 10' },
@@ -24,6 +25,8 @@ const DEMO_STUDENTS: Student[] = [
 
 
 interface AppState {
+  isTeacherMode: boolean;
+  toggleTeacherMode: () => void;
   settings: AppSettings;
   classes: Class[];
   addClass: (cls: Class) => void;
@@ -44,10 +47,12 @@ interface AppState {
 
   exams: ExamConfig[];
   addExam: (exam: ExamConfig) => void;
+  updateExam: (id: string, updates: Partial<ExamConfig>) => void;
   deleteExam: (id: string) => void;
 
   examVersions: ExamVersion[];
   addExamVersion: (version: ExamVersion) => void;
+  updateExamVersion: (id: string, updates: Partial<ExamVersion>) => void;
 
   questions: Question[];
   addQuestion: (q: Question) => void;
@@ -66,6 +71,8 @@ export const useAppStore = create<AppState>()(
       addStudent: (st) => set((state) => ({ students: [...state.students, st] })),
       updateStudent: (id, updates) => set((state) => ({ students: state.students.map(s => s.id === id ? { ...s, ...updates } : s) })),
       deleteStudent: (id) => set((state) => ({ students: state.students.filter(s => s.id !== id) })),
+      isTeacherMode: true,
+      toggleTeacherMode: () => set((state) => ({ isTeacherMode: !state.isTeacherMode })),
       settings: {
         appName: 'TRỢ LÝ GV TOÁN',
         appShortName: 'GV TOÁN',
@@ -87,6 +94,7 @@ export const useAppStore = create<AppState>()(
 
       exams: [],
       addExam: (exam) => set((state) => ({ exams: [...state.exams, exam] })),
+      updateExam: (id, updates) => set((state) => ({ exams: state.exams.map(e => e.id === id ? { ...e, ...updates } : e) })),
       deleteExam: (id) => set((state) => ({
         exams: state.exams.filter(e => e.id !== id),
         examVersions: state.examVersions.filter(v => v.examConfigId !== id)
@@ -94,8 +102,9 @@ export const useAppStore = create<AppState>()(
 
       examVersions: [],
       addExamVersion: (version) => set((state) => ({ examVersions: [...state.examVersions, version] })),
+      updateExamVersion: (id, updates) => set((state) => ({ examVersions: state.examVersions.map(v => v.id === id ? { ...v, ...updates } : v) })),
 
-      questions: demoQuestions,
+      questions: demoQuestions.filter(q => validateQuestionMath(q).isValid),
       addQuestion: (q) => set((state) => ({ questions: [q, ...state.questions] })),
       updateQuestion: (id, updates) => set((state) => ({
         questions: state.questions.map(q => q.id === id ? { ...q, ...updates } as Question : q)
@@ -110,7 +119,7 @@ export const useAppStore = create<AppState>()(
       migrate: (persistedState: any, version: number) => {
         if (version === 0) {
           // Reset questions to demoQuestions if migrating from v0 to v1
-          persistedState.questions = demoQuestions;
+          persistedState.questions = demoQuestions.filter(q => validateQuestionMath(q).isValid);
         }
         return persistedState;
       },

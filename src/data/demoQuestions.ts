@@ -36,7 +36,7 @@ export const demoQuestions: Question[] = [
     },
     options: [
       { id: `o1`, content: `Hàm số đồng biến trên khoảng $(0; 2)$`, isCorrect: false },
-      { id: `o2`, content: `Hàm số nghịch biến trên khoảng $(0; 2)$`, isCorrect: true },
+      { id: `o2`, content: `Hàm số nghịch biến trên khoảng $(0; 1)$`, isCorrect: true },
       { id: `o3`, content: `Hàm số đạt cực đại tại $x = 2$`, isCorrect: false },
       { id: `o4`, content: `Hàm số đạt cực tiểu tại $x = 0$`, isCorrect: false },
     ],
@@ -99,8 +99,8 @@ export const demoQuestions: Question[] = [
           { d: "M -3 -3 Q -1.5 5, 0 0 T 3 3", fill: "none", stroke: "#2563eb", strokeWidth: 0.1 }
         ],
         points: [
-          { x: -1.15, y: 1.08, dashedToAxis: true, labelX: "-1", labelY: "1" },
-          { x: 1.15, y: -1.08, dashedToAxis: true, labelX: "1", labelY: "-1" }
+          { x: -1.15, y: 1.08, dashedToAxis: true, labelX: "-1", labelY: "2" },
+          { x: 1.15, y: -1.08, dashedToAxis: true, labelX: "1", labelY: "-2" }
         ]
       }
     },

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
-import { FileText, Trash2, ExternalLink, Clock, Play } from 'lucide-react';
+import { FileText, Trash2, ExternalLink, Clock, Play, Edit } from 'lucide-react';
 import { ExamConfig } from '../types';
 
 export function ExamList() {
@@ -81,12 +81,21 @@ export function ExamList() {
                     <button onClick={() => setDeleteConfirm(null)} className="text-xs font-bold text-slate-500 hover:underline">Hủy</button>
                   </div>
                 ) : (
+                  <div className="flex items-center gap-1">
+                  <button 
+                    onClick={() => navigate('/exam-editor/' + exam.id)}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                    title="Chỉnh sửa"
+                  >
+                    <Edit size={18} />
+                  </button>
                   <button 
                     onClick={() => setDeleteConfirm(exam.id)}
                     className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 size={18} />
                   </button>
+                  </div>
                 )}
               </div>
 

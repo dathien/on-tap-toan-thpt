@@ -5,6 +5,9 @@ import { Plus, Search, Filter, Edit, Trash2 } from 'lucide-react';
 import { MathText } from '../components/MathText';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
+import { QuestionEditorModal } from '../components/QuestionEditorModal';
+import { Question } from '../types';
+import { v4 as uuidv4 } from 'uuid';
 
 export function Bank() {
   const navigate = useNavigate();
@@ -15,6 +18,8 @@ export function Bank() {
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [filterDiff, setFilterDiff] = useState<string>('ALL');
+  const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const updateQuestion = useAppStore(state => state.updateQuestion);
 
   const filteredQuestions = useMemo(() => {
     return allQuestions.filter(q => {
@@ -52,6 +57,7 @@ export function Bank() {
   };
 
   return (
+    <>
     <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 shrink-0">
         <div>
@@ -140,10 +146,20 @@ export function Bank() {
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
-                      onClick={() => navigate(`/bank/edit/${q.id}`)}
+                      onClick={() => setEditingQuestion(q)}
                       className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                     >
                       <Edit size={18} />
+                    </button>
+                    <button 
+                      onClick={() => {
+                        const copy = { ...q, id: uuidv4() };
+                        useAppStore.getState().addQuestion(copy);
+                      }}
+                      className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                      title="Sao chép"
+                    >
+                      <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
                     </button>
                     <button 
                       onClick={() => handleDelete(q.id)}
@@ -163,5 +179,17 @@ export function Bank() {
         </div>
       </div>
     </div>
+    
+      {editingQuestion && (
+        <QuestionEditorModal
+          initialQuestion={editingQuestion}
+          onCancel={() => setEditingQuestion(null)}
+          onSave={(mode, updatedQ) => {
+            updateQuestion(updatedQ.id, updatedQ);
+            setEditingQuestion(null);
+          }}
+        />
+      )}
+    </>
   );
 }
