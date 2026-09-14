@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const roadmapCode = `
 import React, { useState, useEffect } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { 
@@ -49,7 +51,7 @@ const generateUnitsForTopic = (topic: string): LearningUnit[] => {
       id: 'u1',
       title: 'Khái niệm và Định nghĩa cơ bản',
       theory: [
-        `Lý thuyết trọng tâm về ${topic}.`,
+        \`Lý thuyết trọng tâm về \${topic}.\`,
         'Nắm vững các công thức và định nghĩa cốt lõi.',
       ],
       status: 'LOCKED'
@@ -87,14 +89,7 @@ export function Roadmap() {
   const [session, setSession] = useState<LearningSession | null>(() => {
     try {
       const saved = localStorage.getItem('currentLearningPath');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Validate it's the new schema
-        if (parsed && parsed.status && Array.isArray(parsed.units)) {
-          return parsed;
-        }
-      }
-      return null;
+      return saved ? JSON.parse(saved) : null;
     } catch (e) {
       return null;
     }
@@ -270,7 +265,7 @@ export function Roadmap() {
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-slate-100 -translate-y-1/2 rounded-full z-0"></div>
           <div 
             className="absolute top-1/2 left-0 h-1 bg-indigo-500 -translate-y-1/2 rounded-full z-0 transition-all duration-500"
-            style={{ width: `${(currentStepIdx / (steps.length - 1)) * 100}%` }}
+            style={{ width: \`\${(currentStepIdx / (steps.length - 1)) * 100}%\` }}
           ></div>
           
           <div className="relative z-10 flex justify-between">
@@ -372,7 +367,7 @@ export function Roadmap() {
                         >
                           <input 
                             type="radio" 
-                            name={`diag_${q.id}`}
+                            name={\`diag_\${q.id}\`}
                             className="mt-1 sr-only"
                             checked={quizAnswers[q.id] === opt.id}
                             onChange={() => setQuizAnswers({...quizAnswers, [q.id]: opt.id})}
@@ -527,10 +522,10 @@ export function Roadmap() {
                     <h3 className="text-xl font-bold text-slate-800 mb-4">Ví dụ minh họa</h3>
                     <div className="p-6 border border-slate-200 rounded-xl">
                        <div className="font-semibold text-slate-700 mb-2">Đề bài:</div>
-                       <MathText text="Tìm tập xác định của hàm số $y = sqrt{x - 1}$" />
+                       <MathText text="Tìm tập xác định của hàm số $y = \sqrt{x - 1}$" />
                        <div className="mt-6 font-semibold text-emerald-700 mb-2">Hướng dẫn giải:</div>
                        <div className="p-4 bg-emerald-50 rounded-lg text-emerald-900">
-                         <MathText text="Điều kiện xác định: $x - 1 ge 0 Leftrightarrow x ge 1$. Vậy $D = [1; +infty)$" />
+                         <MathText text="Điều kiện xác định: $x - 1 \ge 0 \Leftrightarrow x \ge 1$. Vậy $D = [1; +\infty)$" />
                        </div>
                     </div>
                     <div className="flex justify-end pt-8">
@@ -620,7 +615,7 @@ export function Roadmap() {
                                <RotateCcw size={40}/>
                              </div>
                              <h3 className="text-2xl font-bold text-slate-800 mb-2">Cần cố gắng thêm!</h3>
-                             <p className="text-slate-600 mb-8">Tỷ lệ đúng chưa đạt yêu cầu (&gt;=70%). Bạn cần ôn tập lại.</p>
+                             <p className="text-slate-600 mb-8">Tỷ lệ đúng chưa đạt yêu cầu (>=70%). Bạn cần ôn tập lại.</p>
                              <div className="flex justify-center gap-4">
                                <button onClick={nextUnitOrAssessment} className="px-6 py-3 bg-indigo-100 text-indigo-700 font-bold rounded-xl hover:bg-indigo-200">
                                  XEM LẠI LÝ THUYẾT
@@ -845,21 +840,8 @@ export function Roadmap() {
     );
   }
 
-  
-  // Fallback if status is somehow unrecognized
-  return (
-    <div className="max-w-3xl mx-auto space-y-8 pb-12 mt-8 text-center">
-       <div className="bg-red-50 text-red-600 p-8 rounded-2xl border border-red-200">
-          <h2 className="text-xl font-bold mb-4">Lỗi tải lộ trình</h2>
-          <p>Dữ liệu lộ trình học bị hỏng hoặc thuộc về phiên bản cũ.</p>
-          <button 
-            onClick={() => { localStorage.removeItem('currentLearningPath'); window.location.reload(); }}
-            className="mt-6 px-6 py-2 bg-red-600 text-white font-bold rounded-xl"
-          >
-            Tạo lộ trình mới
-          </button>
-       </div>
-    </div>
-  );
+  return null;
 }
+`;
 
+fs.writeFileSync('src/pages/Roadmap.tsx', roadmapCode);
