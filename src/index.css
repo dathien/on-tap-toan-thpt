@@ -72,19 +72,28 @@ body,
 .answer-option {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
+  gap: 10px;
+  box-sizing: border-box;
+  /* padding is usually handled by utility classes like p-4 */
 }
 
 .answer-option .answer-content {
   flex: 1 1 auto;
   min-width: 0;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: normal;
+  width: 100%;
   line-height: 1.55;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.answer-math {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  white-space: nowrap;
 }
 
 .answer-option .answer-label {
@@ -100,9 +109,24 @@ body,
   grid-template-columns: 1fr;
 }
 
+/* We will let React decide if it's 1 or 2 columns based on content length using utility classes */
+.answers-grid.auto-cols {
+  grid-template-columns: 1fr;
+}
 @media (min-width: 640px) {
-  .answers-grid {
+  .answers-grid.auto-cols {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+.answers-grid.one-col {
+  grid-template-columns: 1fr;
+}
+.answers-grid.two-cols {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 640px) {
+  .answers-grid.two-cols {
+    grid-template-columns: 1fr 1fr;
   }
 }
 

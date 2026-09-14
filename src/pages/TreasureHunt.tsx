@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
+import { getQuestions as fetchQuestions } from '../utils/questionSelector';
 import { Compass, Search, Zap, Trophy, Crown, Gem, CheckCircle2, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
 import { MathText } from '../components/MathText';
+import { getGridClass } from '../utils/layout';
 import { QuestionEditorModal } from '../components/QuestionEditorModal';
 import { Edit } from 'lucide-react';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
@@ -49,15 +51,19 @@ export function TreasureHunt() {
 
 
   const loadLevel = (levelId: number) => {
-    let mcqs = questions.filter(q => q.question_type === 'MCQ_SINGLE');
+    // Only fetch questions for current grade
+    let gradeQuestions = fetchQuestions(questions, {
+        gradeId: currentGrade,
+        questionTypes: ['MCQ_SINGLE']
+    });
     
     // Try to exclude already played questions
-    let available = mcqs.filter(q => !playedQuestionIds.has(q.id));
+    let available = gradeQuestions.filter(q => !playedQuestionIds.has(q.id));
     
     // If not enough available, just use all (prevent getting stuck)
     const numQ = levelId === 5 ? 3 : 2;
     if (available.length < numQ) {
-       available = mcqs;
+       available = gradeQuestions;
        setPlayedQuestionIds(new Set()); // Reset history
     }
 
@@ -286,7 +292,7 @@ export function TreasureHunt() {
           </div>
           <VisualRenderer visual={q.visual} />
           
-          <div className="answers-grid mt-8">
+          <div className={getGridClass(q.options) + " mt-8"}>
             {(q as any).options?.map((opt: any, oIdx: number) => {
               const isSelected = selectedOption === opt.id;
               const optIsCorrect = opt.isCorrect;

@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { curriculumData } from '../data/curriculum';
 import { useAppStore } from '../store/useAppStore';
 import { MathText } from '../components/MathText';
+import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { Question, McqQuestion, TrueFalseGroupQuestion, ShortAnswerQuestion } from '../types';
@@ -309,7 +311,27 @@ export function StudentExam() {
       <header className="bg-white border-b border-slate-200 px-4 py-3 sticky top-0 z-50 flex flex-col gap-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <h1 className="font-bold text-slate-800 line-clamp-1 uppercase">{config.name}</h1>
+            <h1 className="font-bold text-slate-800 line-clamp-1 uppercase text-sm md:text-base">{config.name}</h1>
+            <div className="text-xs md:text-sm text-slate-500 font-medium mt-1">
+               {(() => {
+                  let scopeStr = `Khối ${config.grade} • ${config.durationMinutes} phút`;
+                  if (config.scopeType === 'LESSON' && config.topicIds?.[0] && config.lessonIds?.[0]) {
+                     const topics = curriculumData[config.grade as 10|11|12] || [];
+                     const t = topics.find(t => t.id === config.topicIds?.[0]);
+                     const l = t?.lessons.find(l => l.id === config.lessonIds?.[0]);
+                     if (t) scopeStr += ` • Chủ đề: ${t.name}`;
+                     if (l) scopeStr += ` • Bài: ${l.name}`;
+                  } else if (config.scopeType === 'TOPIC' && config.topicIds?.[0]) {
+                     const topics = curriculumData[config.grade as 10|11|12] || [];
+                     const t = topics.find(t => t.id === config.topicIds?.[0]);
+                     if (t) scopeStr += ` • Chủ đề: ${t.name}`;
+                  } else if (config.scopeType === 'MULTI_TOPIC') {
+                     scopeStr += ` • Nhiều chủ đề`;
+                  }
+                  return scopeStr;
+               })()}
+            </div>
+
           </div>
           
           <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-xl md:text-2xl font-bold transition-colors ${isCritical ? 'bg-red-100 text-red-700 animate-pulse' : isDanger ? 'bg-orange-100 text-orange-700 animate-pulse' : isWarning ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-700'}`}>
@@ -372,7 +394,7 @@ export function StudentExam() {
           {/* Answer Area */}
           <div className="space-y-4">
             {currentQuestion.question_type === 'MCQ_SINGLE' && (
-              <div className="answers-grid">
+              <div className={getGridClass(currentQuestion.options)}>
                 {(currentQuestion as McqQuestion).options.map((opt, i) => {
                   const labels = ['A', 'B', 'C', 'D'];
                   const isSelected = answers[currentQuestion.id] === opt.id;

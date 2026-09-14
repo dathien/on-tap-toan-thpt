@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { ExamConfig, Grade } from '../types';
-import { Settings2, BookOpen, Database, FileText, PenTool } from 'lucide-react';
+import { Settings2, BookOpen, Database, FileText, PenTool, Loader2 } from 'lucide-react';
+import { parseDocx, extractQuestionsFromText } from '../utils/docxParser';
 
 export function CreateExam() {
   const navigate = useNavigate();
@@ -20,11 +21,24 @@ export function CreateExam() {
   const [shuffleOptions, setShuffleOptions] = useState(true);
 
   const [source, setSource] = useState<'BANK' | 'MANUAL' | 'WORD'>('BANK');
+  const [file, setFile] = useState<File | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseStatus, setParseStatus] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  
+  const addExamVersion = useAppStore(state => state.addExamVersion);
 
-  const handleCreate = (e: React.FormEvent) => {
+
+  
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       alert("Vui lòng nhập tên đề!");
+      return;
+    }
+    
+    if (source === 'WORD' && !file) {
+      alert("Vui lòng chọn file Word (.docx)!");
       return;
     }
 
@@ -40,15 +54,39 @@ export function CreateExam() {
       grade: grade,
     };
     
-    addExam(newExam);
-    
-    // Based on source, we might navigate differently in a real app
     if (source === 'WORD') {
-      navigate('/bank/import');
+      try {
+        setIsParsing(true);
+        setParseStatus('Đang đọc file...');
+        const text = await parseDocx(file!);
+        setParseStatus('Đang nhận diện câu hỏi...');
+        const questions = extractQuestionsFromText(text, grade);
+        
+        if (questions.length === 0) {
+            alert("Chưa nhận diện được câu hỏi trong file.");
+            setIsParsing(false);
+            return;
+        }
+
+        addExam(newExam);
+        addExamVersion({
+            id: uuidv4(),
+            examConfigId: newExam.id,
+            questions: questions
+        });
+        
+        setIsParsing(false);
+        navigate(`/exam-editor/${newExam.id}`);
+      } catch (err: any) {
+        setIsParsing(false);
+        alert("Không thể đọc file Word này: " + err.message);
+      }
     } else {
+      addExam(newExam);
       navigate(`/exam-preview/${newExam.id}`);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto pb-12 space-y-6">
@@ -224,7 +262,13 @@ export function CreateExam() {
                 <span className="text-xs text-slate-500">Tự soạn từng câu hỏi trực tiếp</span>
               </label>
 
-              <label className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center text-center gap-3 transition-all ${source === 'WORD' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 hover:border-indigo-300 text-slate-600'}`}>
+              <label 
+                onClick={() => {
+                  setSource('WORD');
+                  if (!file) fileInputRef.current?.click();
+                }}
+                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center text-center gap-3 transition-all ${source === 'WORD' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 hover:border-indigo-300 text-slate-600'}`}
+              >
                 <input 
                   type="radio" 
                   name="source" 
@@ -237,6 +281,22 @@ export function CreateExam() {
                 <span className="font-bold">Tải Word .docx</span>
                 <span className="text-xs text-slate-500">Nhận dạng đề từ file Word</span>
               </label>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                accept=".docx"
+                className="hidden"
+                onChange={(e) => {
+                   const selected = e.target.files?.[0];
+                   if (selected && selected.name.endsWith('.docx')) {
+                      setFile(selected);
+                   } else if (selected) {
+                      alert('Vui lòng chọn file định dạng .docx hợp lệ.');
+                      setFile(null);
+                   }
+                }}
+              />
             </div>
           </div>
 
@@ -245,10 +305,11 @@ export function CreateExam() {
         <div className="bg-slate-50 border-t border-slate-200 p-6 md:px-8 flex justify-end">
           <button
             type="submit"
-            className="px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+            disabled={isParsing || (source === 'WORD' && !file)}
+            className="px-8 py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-500 transition-colors shadow-sm flex items-center gap-2"
           >
-            <BookOpen size={20} />
-            TẠO ĐỀ VÀ XEM TRƯỚC
+            {isParsing ? <Loader2 size={20} className="animate-spin" /> : <BookOpen size={20} />}
+            {isParsing ? 'ĐANG TẠO ĐỀ...' : 'TẠO ĐỀ VÀ XEM TRƯỚC'}
           </button>
         </div>
       </form>

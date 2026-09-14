@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+let code = `import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
@@ -17,7 +19,6 @@ export function ExamBuilder() {
   const [parts, setParts] = useState<('I' | 'II' | 'III')[]>(isThuongXuyen ? ['I'] : ['I', 'II', 'III']);
   const [shuffleQuestions, setShuffleQuestions] = useState(true);
   const [shuffleOptions, setShuffleOptions] = useState(true);
-  const [partCounts, setPartCounts] = useState({ I: 12, II: 4, III: 6 });
 
   // New states for Scope
   const [examGrade, setExamGrade] = useState<Grade>(12);
@@ -68,17 +69,17 @@ export function ExamBuilder() {
   useEffect(() => {
     if (isCustomName) return;
     
-    let generatedName = `Ôn tập Toán ${examGrade}`;
+    let generatedName = \`Ôn tập Toán \${examGrade}\`;
     
     if (scopeType === 'LESSON' && selectedTopic && selectedLesson) {
       const t = topics.find(t => t.id === selectedTopic);
       const l = t?.lessons.find(l => l.id === selectedLesson);
-      if (l) generatedName += ` – ${l.name}`;
+      if (l) generatedName += \` – \${l.name}\`;
     } else if (scopeType === 'TOPIC' && selectedTopic) {
       const t = topics.find(t => t.id === selectedTopic);
-      if (t) generatedName += ` – ${t.name}`;
+      if (t) generatedName += \` – \${t.name}\`;
     } else if (scopeType === 'MULTI_TOPIC') {
-      generatedName += ` – Chủ đề đã chọn`;
+      generatedName += \` – Chủ đề đã chọn\`;
     }
     
     setExamName(generatedName);
@@ -103,7 +104,6 @@ export function ExamBuilder() {
     if (newMode === 'CHUAN') {
       setDuration(isThuongXuyen ? 15 : 90);
       setParts(isThuongXuyen ? ['I'] : ['I', 'II', 'III']);
-      setPartCounts({ I: isThuongXuyen ? 10 : 12, II: 4, III: 6 });
     }
   };
 
@@ -120,7 +120,7 @@ export function ExamBuilder() {
   const handleCreate = () => {
     const newExam: ExamConfig = {
       id: uuidv4(),
-      name: examName.trim() || `Đề ${type} Toán ${examGrade}`,
+      name: examName.trim() || \`Đề \${type} Toán \${examGrade}\`,
       type: type as any,
       durationMinutes: duration,
       parts,
@@ -131,11 +131,10 @@ export function ExamBuilder() {
       scopeType: scopeType,
       topicIds: scopeType === 'MULTI_TOPIC' ? selectedTopics : [selectedTopic],
       lessonIds: scopeType === 'LESSON' ? [selectedLesson] : undefined,
-      partCounts: mode === 'LINH_HOAT' ? partCounts : undefined,
     };
     
     addExam(newExam);
-    navigate(`/exam-preview/${newExam.id}`);
+    navigate(\`/exam-preview/\${newExam.id}\`);
   };
 
   return (
@@ -252,17 +251,17 @@ export function ExamBuilder() {
             <div className="flex gap-4">
               <button
                 onClick={() => handleModeChange('CHUAN')}
-                className={`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all ${
+                className={\`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all \${
                   mode === 'CHUAN' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
+                }\`}
               >
                 Đề Chuẩn
               </button>
               <button
                 onClick={() => handleModeChange('LINH_HOAT')}
-                className={`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all ${
+                className={\`flex-1 py-3 px-4 rounded-xl border-2 font-medium transition-all \${
                   mode === 'LINH_HOAT' ? 'border-indigo-600 bg-indigo-50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'
-                }`}
+                }\`}
               >
                 Linh Hoạt
               </button>
@@ -291,7 +290,7 @@ export function ExamBuilder() {
         <div>
           <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Cấu trúc phần thi</h3>
           <div className="space-y-3">
-            <label className={`flex items-center gap-3 p-4 rounded-xl border ${parts.includes('I') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} ${mode === 'CHUAN' || isThuongXuyen ? 'opacity-70' : 'cursor-pointer'}`}>
+            <label className={\`flex items-center gap-3 p-4 rounded-xl border \${parts.includes('I') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} \${mode === 'CHUAN' || isThuongXuyen ? 'opacity-70' : 'cursor-pointer'}\`}>
               <input
                 type="checkbox"
                 checked={parts.includes('I')}
@@ -301,15 +300,9 @@ export function ExamBuilder() {
               />
               <div className="font-semibold text-slate-800">Trắc nghiệm ABCD (Phần I)</div>
             </label>
-            {parts.includes('I') && mode === 'LINH_HOAT' && (
-              <div className="pl-12 flex items-center gap-3">
-                 <span className="text-sm text-slate-500">Số câu:</span>
-                 <input type="number" min="1" max="50" value={partCounts.I} onChange={e => setPartCounts({...partCounts, I: parseInt(e.target.value) || 0})} className="w-20 px-3 py-1 rounded-lg border border-slate-300 outline-none" />
-              </div>
-            )}
             {!isThuongXuyen && (
               <>
-                <label className={`flex items-center gap-3 p-4 rounded-xl border ${parts.includes('II') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} ${mode === 'CHUAN' ? 'opacity-70' : 'cursor-pointer'}`}>
+                <label className={\`flex items-center gap-3 p-4 rounded-xl border \${parts.includes('II') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} \${mode === 'CHUAN' ? 'opacity-70' : 'cursor-pointer'}\`}>
                   <input
                     type="checkbox"
                     checked={parts.includes('II')}
@@ -319,13 +312,7 @@ export function ExamBuilder() {
                   />
                   <div className="font-semibold text-slate-800">Trắc nghiệm Đúng / Sai (Phần II)</div>
                 </label>
-                {parts.includes('II') && mode === 'LINH_HOAT' && (
-                  <div className="pl-12 flex items-center gap-3">
-                     <span className="text-sm text-slate-500">Số câu:</span>
-                     <input type="number" min="1" max="20" value={partCounts.II} onChange={e => setPartCounts({...partCounts, II: parseInt(e.target.value) || 0})} className="w-20 px-3 py-1 rounded-lg border border-slate-300 outline-none" />
-                  </div>
-                )}
-                <label className={`flex items-center gap-3 p-4 rounded-xl border ${parts.includes('III') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} ${mode === 'CHUAN' ? 'opacity-70' : 'cursor-pointer'}`}>
+                <label className={\`flex items-center gap-3 p-4 rounded-xl border \${parts.includes('III') ? 'border-indigo-200 bg-indigo-50/50' : 'border-slate-200'} \${mode === 'CHUAN' ? 'opacity-70' : 'cursor-pointer'}\`}>
                   <input
                     type="checkbox"
                     checked={parts.includes('III')}
@@ -335,12 +322,6 @@ export function ExamBuilder() {
                   />
                   <div className="font-semibold text-slate-800">Trả lời ngắn (Phần III)</div>
                 </label>
-                {parts.includes('III') && mode === 'LINH_HOAT' && (
-                  <div className="pl-12 flex items-center gap-3">
-                     <span className="text-sm text-slate-500">Số câu:</span>
-                     <input type="number" min="1" max="20" value={partCounts.III} onChange={e => setPartCounts({...partCounts, III: parseInt(e.target.value) || 0})} className="w-20 px-3 py-1 rounded-lg border border-slate-300 outline-none" />
-                  </div>
-                )}
               </>
             )}
           </div>
@@ -382,3 +363,6 @@ export function ExamBuilder() {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/pages/ExamBuilder.tsx', code);
+console.log("Patched ExamBuilder");

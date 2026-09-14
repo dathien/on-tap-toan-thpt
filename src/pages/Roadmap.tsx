@@ -2,8 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
+import { getQuestions as fetchQuestions } from '../utils/questionSelector';
 import { Rocket, Zap, BookOpen, PenTool, CheckCircle2, BarChart2, RotateCcw, ChevronLeft, ArrowRight, Play, CheckCircle, Gamepad2, User, FileText } from 'lucide-react';
 import { MathText } from '../components/MathText';
+import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { Question, LearningSession, LearningUnit } from '../types';
@@ -235,6 +237,10 @@ export function Roadmap() {
   const [selectedTopic, setSelectedTopic] = useState<string>(demoCurriculum[12][0].id);
   const [selectedLesson, setSelectedLesson] = useState<string>(demoCurriculum[12][0].lessons[0].id);
   const [target, setTarget] = useState<string>('Điểm 7+');
+  const [selectedAbility, setSelectedAbility] = useState<'WEAK' | 'AVERAGE' | 'GOOD' | 'EXCELLENT'>('AVERAGE');
+  const [proposedQuestions, setProposedQuestions] = useState<Question[] | null>(null);
+  const [showPreview, setShowPreview] = useState(false);
+
 
   // Engine State
   const [session, setSession] = useState<LearningSession | null>(() => {
@@ -271,21 +277,32 @@ export function Roadmap() {
   }, [session]);
 
 const handleStartSetup = () => {
-    if (!selectedGrade || !selectedTopic || !selectedLesson || !target) return;
+    if (!selectedGrade || !selectedTopic || !selectedLesson) return;
     
-    const topicObj = demoCurriculum[selectedGrade].find(t => t.id === selectedTopic);
+    const qs = proposedQuestions || generateRoadmapQuestions();
+    
+    const topicObj = demoCurriculum[selectedGrade as keyof typeof demoCurriculum]?.find(t => t.id === selectedTopic);
     const lessonObj = topicObj?.lessons.find(l => l.id === selectedLesson);
+    
+    let pathName = "Lộ trình";
+    if (selectedAbility === 'WEAK') pathName = `Lộ trình củng cố – ${lessonObj?.name || selectedTopic} – Toán ${selectedGrade}`;
+    else if (selectedAbility === 'AVERAGE') pathName = `Lộ trình cơ bản – ${lessonObj?.name || selectedTopic} – Toán ${selectedGrade}`;
+    else if (selectedAbility === 'GOOD') pathName = `Lộ trình vận dụng – ${lessonObj?.name || selectedTopic} – Toán ${selectedGrade}`;
+    else if (selectedAbility === 'EXCELLENT') pathName = `Lộ trình nâng cao – ${lessonObj?.name || selectedTopic} – Toán ${selectedGrade}`;
 
     const newSession: LearningSession = {
       id: String(Date.now()),
+      name: pathName,
       grade: selectedGrade,
-      topic: topicObj ? topicObj.name : selectedTopic, // For backwards compatibility
+      topic: topicObj ? topicObj.name : selectedTopic, 
       goal: target,
+      abilityLevel: selectedAbility,
       status: 'DIAGNOSTIC',
-      units: generateUnitsForTopic(lessonObj ? lessonObj.name : selectedTopic),
+      units: generateUnitsForTopic(lessonObj ? lessonObj.name : selectedTopic, selectedAbility),
       currentUnitIndex: 0,
       progress: 0,
-      startedAt: new Date().toISOString()
+      startedAt: new Date().toISOString(),
+      questions: qs
     };
     
     setSession(newSession);
@@ -401,13 +418,14 @@ const handleStartSetup = () => {
     return renderHome();
   }
 
+  
   if (view === 'SETUP') {
     const availableTopics = demoCurriculum[selectedGrade as keyof typeof demoCurriculum] || [];
     const selectedTopicObj = availableTopics.find(t => t.id === selectedTopic);
     const availableLessons = selectedTopicObj ? selectedTopicObj.lessons : [];
     
     return (
-      <div className="max-w-3xl mx-auto space-y-8 pb-12 mt-8 animate-fade-in">
+      <div className="max-w-4xl mx-auto space-y-8 pb-12 mt-8 animate-fade-in">
         <button 
           onClick={() => setView('HOME')} 
           className="flex items-center text-slate-500 hover:text-indigo-600 font-bold mb-2 transition-colors"
@@ -417,122 +435,282 @@ const handleStartSetup = () => {
         </button>
         <div className="text-center mb-10">
           <h2 className="text-3xl font-bold text-slate-800 uppercase tracking-wide">Thiết lập Lộ trình</h2>
-          <p className="text-slate-500 mt-2">Hệ thống sẽ cá nhân hóa bài học dựa trên lựa chọn của bạn</p>
+          <p className="text-slate-500 mt-2">Hệ thống sẽ cá nhân hóa bài học dựa trên nhóm năng lực</p>
         </div>
 
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
-          <div className="space-y-6">
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">1. Khối lớp</label>
+                  <select 
+                    value={selectedGrade}
+                    onChange={e => {
+                      const newGrade = Number(e.target.value) as 10 | 11 | 12;
+                      setSelectedGrade(newGrade);
+                      const newTopics = demoCurriculum[newGrade];
+                      if (newTopics && newTopics.length > 0) {
+                        setSelectedTopic(newTopics[0].id);
+                        setSelectedLesson(newTopics[0].lessons?.[0]?.id || '');
+                      } else {
+                        setSelectedTopic('');
+                        setSelectedLesson('');
+                      }
+                    }}
+                    className="w-full p-3 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none font-medium text-slate-700 bg-white"
+                  >
+                    <option value={10}>Khối 10</option>
+                    <option value={11}>Khối 11</option>
+                    <option value={12}>Khối 12</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">2. Chủ đề</label>
+                  <select 
+                    value={selectedTopic}
+                    onChange={e => {
+                      const topicId = e.target.value;
+                      setSelectedTopic(topicId);
+                      const tObj = availableTopics.find(t => t.id === topicId);
+                      setSelectedLesson(tObj?.lessons?.[0]?.id || '');
+                    }}
+                    className="w-full p-3 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none font-medium text-slate-700 bg-white"
+                  >
+                    {availableTopics.map(topic => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">3. Bài học</label>
+                  <select 
+                    value={selectedLesson}
+                    onChange={e => setSelectedLesson(e.target.value)}
+                    className="w-full p-3 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none font-medium text-slate-700 bg-white"
+                  >
+                    {availableLessons.map(lesson => <option key={lesson.id} value={lesson.id}>{lesson.name}</option>)}
+                  </select>
+                </div>
+            </div>
+
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">1. Khối lớp</label>
-              <select 
-                value={selectedGrade}
-                onChange={e => {
-                  const newGrade = Number(e.target.value) as 10 | 11 | 12;
-                  setSelectedGrade(newGrade);
-                  
-                  // Auto select first topic and lesson for the new grade
-                  const newTopics = demoCurriculum[newGrade];
-                  if (newTopics && newTopics.length > 0) {
-                    const firstTopic = newTopics[0];
-                    setSelectedTopic(firstTopic.id);
-                    if (firstTopic.lessons && firstTopic.lessons.length > 0) {
-                      setSelectedLesson(firstTopic.lessons[0].id);
-                    } else {
-                      setSelectedLesson('');
-                    }
-                  } else {
-                    setSelectedTopic('');
-                    setSelectedLesson('');
-                  }
-                }}
-                className="w-full p-4 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium text-slate-700"
-              >
-                <option value={10}>Khối 10</option>
-                <option value={11}>Khối 11</option>
-                <option value={12}>Khối 12</option>
-              </select>
+              <div className="flex items-center justify-between mb-4">
+                  <label className="block text-sm font-bold text-slate-700">4. Nhóm năng lực</label>
+                  <button onClick={() => setSelectedAbility('AVERAGE')} className="text-sm text-indigo-600 font-semibold hover:underline">Tự động đề xuất</button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div 
+                    onClick={() => setSelectedAbility('WEAK')}
+                    className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-2 transition-all ${selectedAbility === 'WEAK' ? 'border-green-500 bg-green-50 shadow-sm' : 'border-slate-200 hover:border-green-200 bg-white'}`}
+                >
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600"><CheckCircle size={18} /></div>
+                    <div className="font-bold text-slate-800">Cần củng cố</div>
+                    <div className="text-xs text-slate-500">Nắm kiến thức nền, lý thuyết cơ bản.</div>
+                </div>
+                
+                <div 
+                    onClick={() => setSelectedAbility('AVERAGE')}
+                    className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-2 transition-all ${selectedAbility === 'AVERAGE' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-slate-200 hover:border-blue-200 bg-white'}`}
+                >
+                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600"><Play size={18} /></div>
+                    <div className="font-bold text-slate-800">Trung bình</div>
+                    <div className="text-xs text-slate-500">Luyện chắc dạng bài, tăng phản xạ.</div>
+                </div>
+
+                <div 
+                    onClick={() => setSelectedAbility('GOOD')}
+                    className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-2 transition-all ${selectedAbility === 'GOOD' ? 'border-purple-500 bg-purple-50 shadow-sm' : 'border-slate-200 hover:border-purple-200 bg-white'}`}
+                >
+                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600"><Zap size={18} /></div>
+                    <div className="font-bold text-slate-800">Khá</div>
+                    <div className="text-xs text-slate-500">Giảm lý thuyết, tăng vận dụng.</div>
+                </div>
+
+                <div 
+                    onClick={() => setSelectedAbility('EXCELLENT')}
+                    className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col gap-2 transition-all ${selectedAbility === 'EXCELLENT' ? 'border-orange-500 bg-orange-50 shadow-sm' : 'border-slate-200 hover:border-orange-200 bg-white'}`}
+                >
+                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600"><Rocket size={18} /></div>
+                    <div className="font-bold text-slate-800">Giỏi</div>
+                    <div className="text-xs text-slate-500">Bài toán phân hóa, tổng hợp kiến thức.</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl p-6 border border-slate-200">
+                <h4 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><BookOpen size={18} className="text-slate-500" /> Lộ trình đề xuất</h4>
+                
+                <div className="flex gap-4 text-sm font-medium text-slate-600 mb-6">
+                   <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 flex-1 text-center">
+                     <span className="block text-xl font-bold text-slate-800 mb-1">
+                        {selectedAbility === 'WEAK' ? '8-10' : selectedAbility === 'AVERAGE' ? '10-12' : selectedAbility === 'GOOD' ? '12-15' : '10-15'}
+                     </span> 
+                     Câu hỏi
+                   </div>
+                   <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 flex-1 text-center">
+                     <span className="block text-xl font-bold text-slate-800 mb-1">
+                        {selectedAbility === 'WEAK' ? '60%' : selectedAbility === 'AVERAGE' ? '30%' : selectedAbility === 'GOOD' ? '10%' : '0%'}
+                     </span> 
+                     Nhận biết
+                   </div>
+                   <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 flex-1 text-center">
+                     <span className="block text-xl font-bold text-slate-800 mb-1">
+                        {selectedAbility === 'WEAK' ? '10%' : selectedAbility === 'AVERAGE' ? '30%' : selectedAbility === 'GOOD' ? '50%' : '45%'}
+                     </span> 
+                     Vận dụng
+                   </div>
+                   <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 flex-1 text-center">
+                     <span className="block text-xl font-bold text-slate-800 mb-1">
+                        {selectedAbility === 'WEAK' ? '0%' : selectedAbility === 'AVERAGE' ? '0%' : selectedAbility === 'GOOD' ? '10%' : '45%'}
+                     </span> 
+                     VD Cao
+                   </div>
+                </div>
+
+                <div className="flex justify-end gap-3">
+                   <button 
+                     onClick={handlePreview}
+                     className="px-6 py-2.5 bg-white border border-slate-300 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+                   >
+                     XEM TRƯỚC BÀI TẬP
+                   </button>
+                   <button 
+                    onClick={() => {
+                        handleStartSetup();
+                    }}
+                    className="px-6 py-2.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                  >
+                    ÁP DỤNG LỘ TRÌNH
+                  </button>
+                </div>
             </div>
             
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">2. Chủ đề</label>
-              <select 
-                value={selectedTopic}
-                onChange={e => {
-                  const topicId = e.target.value;
-                  setSelectedTopic(topicId);
-                  
-                  // Auto select first lesson
-                  const tObj = availableTopics.find(t => t.id === topicId);
-                  if (tObj && tObj.lessons && tObj.lessons.length > 0) {
-                    setSelectedLesson(tObj.lessons[0].id);
-                  } else {
-                    setSelectedLesson('');
-                  }
-                }}
-                className="w-full p-4 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium text-slate-700"
-              >
-                <option value="">[Chọn chủ đề]</option>
-                {availableTopics.map(topic => (
-                  <option key={topic.id} value={topic.id}>{topic.name}</option>
-                ))}
-              </select>
-            </div>
+            {showPreview && proposedQuestions && (
+                <div className="mt-8 border-t border-slate-200 pt-8">
+                   <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-xl font-bold text-slate-800">Xem trước ({proposedQuestions.length} câu hỏi)</h3>
+                      <button onClick={() => setShowPreview(false)} className="text-slate-500 hover:text-slate-700 font-bold">✕ Đóng</button>
+                   </div>
+                   
+                   <div className="space-y-6">
+                      {proposedQuestions.map((q, idx) => (
+                         <div key={q.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="flex gap-2 items-center">
+                                    <span className="font-bold text-indigo-700">Câu {idx + 1}</span>
+                                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                        q.difficulty === 1 ? 'bg-green-100 text-green-700' :
+                                        q.difficulty === 2 ? 'bg-blue-100 text-blue-700' :
+                                        q.difficulty === 3 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'
+                                    }`}>
+                                        {q.difficulty === 1 ? 'Nhận biết' : q.difficulty === 2 ? 'Thông hiểu' : q.difficulty === 3 ? 'Vận dụng' : 'Vận dụng cao'}
+                                    </span>
+                                </div>
+                                <button onClick={() => setEditingQuestion(q)} className="text-indigo-600 hover:text-indigo-800 font-bold text-sm flex items-center gap-1"><Edit size={14} /> Sửa</button>
+                            </div>
+                            <div className="text-slate-800 font-medium"><MathText text={sanitizeQuestionText(q.content)} /></div>
+                            {q.question_type === 'MCQ_SINGLE' && q.options && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                                   {q.options.map((opt: any, oIdx: number) => (
+                                      <div key={opt.id} className={`p-3 rounded-lg border ${opt.id === q.correct_option_id ? 'border-green-500 bg-green-50 font-semibold' : 'border-slate-200 bg-slate-50'}`}>
+                                         <span className="mr-2 font-bold">{['A', 'B', 'C', 'D'][oIdx]}.</span>
+                                         <MathText text={sanitizeQuestionText(opt.content)} />
+                                      </div>
+                                   ))}
+                                </div>
+                            )}
+                         </div>
+                      ))}
+                      {proposedQuestions.length === 0 && (
+                          <div className="text-center p-8 bg-slate-50 rounded-xl border border-slate-200 text-slate-500">
+                             Ngân hàng hiện chưa đủ câu phù hợp cho lộ trình này.
+                          </div>
+                      )}
+                   </div>
+                </div>
+            )}
             
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">3. Bài học</label>
-              <select 
-                value={selectedLesson}
-                onChange={e => setSelectedLesson(e.target.value)}
-                className="w-full p-4 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium text-slate-700"
-              >
-                <option value="">[Chọn bài học]</option>
-                {availableLessons.map(lesson => (
-                  <option key={lesson.id} value={lesson.id}>{lesson.name}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">4. Mục tiêu điểm số</label>
-              <select 
-                value={target}
-                onChange={e => setTarget(e.target.value)}
-                className="w-full p-4 rounded-xl border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all font-medium text-slate-700"
-              >
-                <option value="Củng cố nền tảng">Củng cố nền tảng</option>
-                <option value="Điểm 5+">Điểm 5+</option>
-                <option value="Điểm 7+">Điểm 7+</option>
-                <option value="Điểm 8+">Điểm 8+</option>
-                <option value="Điểm 9+">Điểm 9+</option>
-              </select>
-            </div>
-            
-            <div className="pt-4">
-              <button 
-                type="button"
-                onClick={handleStartSetup}
-                disabled={!selectedGrade || !selectedTopic || !selectedLesson || !target}
-                className={clsx(
-                  "w-full py-4 font-bold rounded-xl transition-all text-lg shadow-sm",
-                  (!selectedGrade || !selectedTopic || !selectedLesson || !target)
-                    ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                    : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'
-                )}
-              >
-                {(!selectedGrade || !selectedTopic || !selectedLesson || !target) ? 'VUI LÒNG CHỌN ĐẦY ĐỦ' : 'BẮT ĐẦU HỌC'}
-              </button>
-            </div>
           </div>
         </div>
+        
+        {editingQuestion && (
+          <QuestionEditorModal
+            question={editingQuestion}
+            onClose={() => setEditingQuestion(null)}
+            onSave={(mode, newQ) => {
+               setProposedQuestions(prev => prev ? prev.map(q => q.id === newQ.id ? newQ : q) : null);
+               setEditingQuestion(null);
+            }}
+            isEmbedded={true}
+          />
+        )}
       </div>
     );
   }
 
+
   // Helper: Get generic questions (mock filtering for diagnostic/practice)
   // In a real app, this filters by session.topic and difficulty
+
+  const generateRoadmapQuestions = () => {
+    let reqCounts = { rec: 0, und: 0, app: 0, high: 0 };
+    if (selectedAbility === 'WEAK') {
+      reqCounts = { rec: 5, und: 2, app: 1, high: 0 };
+    } else if (selectedAbility === 'AVERAGE') {
+      reqCounts = { rec: 3, und: 4, app: 3, high: 0 };
+    } else if (selectedAbility === 'GOOD') {
+      reqCounts = { rec: 1, und: 3, app: 5, high: 1 };
+    } else if (selectedAbility === 'EXCELLENT') {
+      reqCounts = { rec: 0, und: 1, app: 4, high: 5 };
+    }
+
+    const availableQs = questions.filter(q => 
+        q.grade_id === selectedGrade && 
+        q.topic_id === selectedTopic && 
+        q.lesson_id === selectedLesson &&
+        q.question_type === 'MCQ_SINGLE'
+    );
+
+    // Simple distribution fallback
+    const selected: Question[] = [];
+    const getByDiff = (diff: number, count: number) => {
+        let pool = availableQs.filter(q => q.difficulty === diff && !selected.some(s => s.id === q.id));
+        if (pool.length < count) {
+            // fallback to adjacent
+            pool = availableQs.filter(q => Math.abs(q.difficulty - diff) <= 1 && !selected.some(s => s.id === q.id));
+        }
+        if (pool.length < count) {
+            pool = availableQs.filter(q => !selected.some(s => s.id === q.id)); // any
+        }
+        
+        // shuffle pool
+        const shuffled = [...pool].sort(() => 0.5 - Math.random());
+        selected.push(...shuffled.slice(0, count));
+    };
+
+    getByDiff(1, reqCounts.rec);
+    getByDiff(2, reqCounts.und);
+    getByDiff(3, reqCounts.app);
+    getByDiff(4, reqCounts.high);
+
+    return selected;
+  };
+
+  const handlePreview = () => {
+    const qs = generateRoadmapQuestions();
+    setProposedQuestions(qs);
+    setShowPreview(true);
+  };
+
   const getQuestions = (count: number) => {
-    // Just return some MCQ questions for demonstration
-    return questions.filter(q => q.question_type === 'MCQ_SINGLE').slice(0, count);
+    if (session?.questions && session.questions.length > 0) {
+        // Randomly pull from the pre-generated pool
+        const shuffled = [...session.questions].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+    }
+    return fetchQuestions(questions, {
+        gradeId: currentGrade,
+        questionTypes: ['MCQ_SINGLE'],
+        count: count
+    });
   };
 
   const getTargetScore = () => {
@@ -571,6 +749,9 @@ const handleStartSetup = () => {
           LỘ TRÌNH TỰ HỌC
         </button>
       </div>
+      {session.name && (
+        <h2 className="text-2xl font-bold text-slate-800 mb-6">{session.name}</h2>
+      )}
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
         <div className="flex justify-between items-start mb-6">
           <div>
@@ -677,7 +858,7 @@ const handleStartSetup = () => {
                       </div>
                     <VisualRenderer visual={q.visual} />
                     
-                    <div className="answers-grid mt-4">
+                    <div className={getGridClass((q as any).options) + " mt-4"}>
                       {(q as any).options?.map((opt: any, oIdx: number) => (
                         <label 
                                   key={opt.id}
@@ -879,7 +1060,7 @@ const handleStartSetup = () => {
                             <div className="question-content question-text mb-4 text-slate-800 text-lg">
                         <MathText text={sanitizeQuestionText(q.content)} />
                       </div>
-                            <div className="answers-grid mt-4">
+                            <div className={getGridClass((q as any).options) + " mt-4"}>
                               {(q as any).options?.map((opt: any, oIdx: number) => (
                                 <label 
                                   key={opt.id}
@@ -1067,7 +1248,7 @@ const handleStartSetup = () => {
                       <div className="question-content question-text mb-4 text-slate-800 text-lg">
                         <MathText text={sanitizeQuestionText(q.content)} />
                       </div>
-                      <div className="answers-grid mt-4">
+                      <div className={getGridClass((q as any).options) + " mt-4"}>
                         {(q as any).options?.map((opt: any, oIdx: number) => (
                           <label 
                                   key={opt.id}

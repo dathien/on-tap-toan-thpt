@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { curriculumData } from '../data/curriculum';
 import { useAppStore } from '../store/useAppStore';
+import { getQuestions } from '../utils/questionSelector';
 import { ExamConfig } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -43,6 +44,35 @@ export function PracticeConfig() {
   const addExamVersion = useAppStore(state => state.addExamVersion);
   const addAttempt = useAppStore(state => state.addAttempt);
 
+  
+  // Calculate available dynamically
+  const pool = getQuestions(allQuestions, {
+    gradeId: currentGrade,
+    topicId: scope === 'LESSON' || scope === 'TOPIC' ? topicId : undefined,
+    lessonId: scope === 'LESSON' ? lessonId : undefined,
+  });
+  
+  const availableI = pool.filter(q => q.question_type === 'MCQ_SINGLE').length;
+  const availableII = pool.filter(q => q.question_type === 'TRUE_FALSE_GROUP').length;
+  const availableIII = pool.filter(q => q.question_type === 'SHORT_ANSWER').length;
+
+  let totalRequested = 0;
+  let totalAvailableForRequested = 0;
+  
+  if (parts.includes('I')) {
+    totalRequested += questionCount;
+    totalAvailableForRequested += Math.min(questionCount, availableI);
+  }
+  if (parts.includes('II') && !isThuongXuyen) {
+    totalRequested += 4;
+    totalAvailableForRequested += Math.min(4, availableII);
+  }
+  if (parts.includes('III') && !isThuongXuyen) {
+    totalRequested += 6;
+    totalAvailableForRequested += Math.min(6, availableIII);
+  }
+
+
   const handleStartPractice = () => {
     // Create an ExamConfig
     const newConfig: ExamConfig = {
@@ -59,9 +89,12 @@ export function PracticeConfig() {
     addExam(newConfig);
 
     // Build selected questions
-    const pool = allQuestions.filter(q => q.grade_id === currentGrade);
+    const pool = getQuestions(allQuestions, {
+      gradeId: currentGrade,
+      topicId: scope === 'LESSON' || scope === 'TOPIC' ? topicId : undefined,
+      lessonId: scope === 'LESSON' ? lessonId : undefined,
+    });
     
-    // Naive shuffle
     const shuffleArray = (array: any[]) => {
       const newArr = [...array];
       for (let i = newArr.length - 1; i > 0; i--) {

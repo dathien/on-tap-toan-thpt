@@ -5,6 +5,7 @@ import { ExamVersion, Question, McqQuestion } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { isDuplicateQuestion } from '../utils/textSanitizer';
 import { validateQuestionVisual } from '../utils/visualValidator';
+import { getQuestions } from '../utils/questionSelector';
 
 function shuffleArray<T>(array: T[]): T[] {
   const newArr = [...array];
@@ -39,8 +40,13 @@ export function ExamPreview() {
     // Generate new version based on config
     let selectedQuestions: Question[] = [];
     
-    // Filter questions by config's grade and validate visual
-    const rawPool = allQuestions.filter(q => q.grade_id === examConfig.grade && validateQuestionVisual(q).valid);
+    // Filter questions by config's grade, scope, and validate visual
+    let rawPool = getQuestions(allQuestions, {
+      gradeId: examConfig.grade,
+      topicIds: examConfig.topicIds,
+      lessonIds: examConfig.lessonIds,
+    });
+    rawPool = rawPool.filter(q => validateQuestionVisual(q).valid);
     const pool: Question[] = [];
     for (const q of rawPool) {
       if (!pool.some(existing => isDuplicateQuestion(existing, q))) {
@@ -51,7 +57,7 @@ export function ExamPreview() {
     if (examConfig.parts.includes('I')) {
       let iQ = pool.filter(q => q.question_type === 'MCQ_SINGLE');
       if (examConfig.shuffleQuestions) iQ = shuffleArray(iQ);
-      const count = examConfig.type === 'THUONG_XUYEN' ? 10 : 12;
+      const count = examConfig.partCounts?.I || (examConfig.type === 'THUONG_XUYEN' ? 10 : 12);
       
       if (iQ.length < count) {
         setErrorDetails({ part: 'I (Trắc nghiệm nhiều phương án)', required: count, actual: iQ.length });
@@ -75,7 +81,7 @@ export function ExamPreview() {
     if (examConfig.parts.includes('II')) {
       let iiQ = pool.filter(q => q.question_type === 'TRUE_FALSE_GROUP');
       if (examConfig.shuffleQuestions) iiQ = shuffleArray(iiQ);
-      const count = 4;
+      const count = examConfig.partCounts?.II || 4;
       if (iiQ.length < count) {
         setErrorDetails({ part: 'II (Đúng/Sai)', required: count, actual: iiQ.length });
         return;
@@ -86,7 +92,7 @@ export function ExamPreview() {
     if (examConfig.parts.includes('III')) {
       let iiiQ = pool.filter(q => q.question_type === 'SHORT_ANSWER');
       if (examConfig.shuffleQuestions) iiiQ = shuffleArray(iiiQ);
-      const count = 6;
+      const count = examConfig.partCounts?.III || 6;
       if (iiiQ.length < count) {
         setErrorDetails({ part: 'III (Trả lời ngắn)', required: count, actual: iiiQ.length });
         return;

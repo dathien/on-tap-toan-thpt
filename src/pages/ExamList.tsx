@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { curriculumData } from '../data/curriculum';
 import { useAppStore } from '../store/useAppStore';
 import { FileText, Trash2, ExternalLink, Clock, Play, Edit } from 'lucide-react';
 import { ExamConfig } from '../types';
 
 export function ExamList() {
   const navigate = useNavigate();
-  const { currentGrade, exams, deleteExam } = useAppStore();
+  const { currentGrade, exams, examVersions, deleteExam } = useAppStore();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const gradeExams = exams.filter(e => e.grade === currentGrade).reverse();
@@ -99,9 +100,29 @@ export function ExamList() {
                 )}
               </div>
 
-              <h3 className="text-lg font-bold text-slate-800 mb-2 line-clamp-2" title={exam.name}>
+              <h3 className="text-lg font-bold text-slate-800 mb-1 line-clamp-2" title={exam.name}>
                 {exam.name}
               </h3>
+
+              <div className="text-sm text-slate-500 font-medium mb-3 line-clamp-1">
+                {(() => {
+                  let scopeStr = `Khối ${exam.grade}`;
+                  if (exam.scopeType === 'LESSON' && exam.topicIds?.[0] && exam.lessonIds?.[0]) {
+                     const topics = curriculumData[exam.grade as 10|11|12] || [];
+                     const t = topics.find(t => t.id === exam.topicIds?.[0]);
+                     const l = t?.lessons.find(l => l.id === exam.lessonIds?.[0]);
+                     if (l) scopeStr += ` • Bài: ${l.name}`;
+                  } else if (exam.scopeType === 'TOPIC' && exam.topicIds?.[0]) {
+                     const topics = curriculumData[exam.grade as 10|11|12] || [];
+                     const t = topics.find(t => t.id === exam.topicIds?.[0]);
+                     if (t) scopeStr += ` • Chủ đề: ${t.name}`;
+                  } else if (exam.scopeType === 'MULTI_TOPIC') {
+                     scopeStr += ` • Nhiều chủ đề`;
+                  }
+                  return scopeStr;
+                })()}
+              </div>
+
               
               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-600 font-medium mb-6">
                 <span className="flex items-center gap-1.5">
@@ -111,6 +132,13 @@ export function ExamList() {
                 <span className="flex items-center gap-1.5">
                   <FileText size={16} className="text-slate-400" />
                   {exam.parts.length} Phần
+                </span>
+                <span className="flex items-center gap-1.5 text-indigo-600">
+                  {(() => {
+                     const version = examVersions.find(v => v.examConfigId === exam.id);
+                     if (version) return `${version.questions.length} câu`;
+                     return 'Chưa tạo câu hỏi';
+                  })()}
                 </span>
               </div>
 

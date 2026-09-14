@@ -53,11 +53,22 @@ export const curriculumData = {
     },
     {
       id: 'c6',
-      name: 'Vectơ và hệ tọa độ trong không gian',
+      name: 'Phương pháp tọa độ trong không gian',
       lessons: [
-        { id: 'l18', name: 'Vectơ trong không gian' },
-        { id: 'l19', name: 'Tọa độ của vectơ' },
-        { id: 'l20', name: 'Biểu thức tọa độ của các phép toán vectơ' }
+        { id: 'l18', name: 'Hệ tọa độ trong không gian' },
+        { id: 'l19', name: 'Biểu thức tọa độ của các phép toán vectơ' },
+        { id: 'l20', name: 'Phương trình mặt phẳng' },
+        { id: 'l21', name: 'Phương trình đường thẳng' },
+        { id: 'l22', name: 'Phương trình mặt cầu' }
+      ]
+    },
+    {
+      id: 'c7',
+      name: 'Nguyên hàm, Tích phân và Ứng dụng',
+      lessons: [
+        { id: 'l23', name: 'Nguyên hàm' },
+        { id: 'l24', name: 'Tích phân' },
+        { id: 'l25', name: 'Ứng dụng hình học của tích phân' }
       ]
     }
   ]

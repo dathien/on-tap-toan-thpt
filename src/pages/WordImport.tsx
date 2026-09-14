@@ -4,6 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { Question } from '../types';
 import { MathText } from '../components/MathText';
+import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { UploadCloud, CheckCircle, XCircle, FileText, Loader2, ArrowRight } from 'lucide-react';
@@ -229,7 +230,7 @@ export function WordImport() {
                 </div>
 
                 {q.question_type === 'MCQ_SINGLE' && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className={getGridClass((q as any).options) + " gap-3"}>
                     {q.options.map((opt: any, i: number) => (
                       <div key={opt.id} className={`answer-option p-4 rounded-xl border-2 ${opt.isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-slate-100 bg-slate-50'}`}>
                         <span className={`answer-label w-6 h-6 rounded-full font-bold text-sm ${opt.isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}`}>

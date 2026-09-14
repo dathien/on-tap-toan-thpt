@@ -25,6 +25,8 @@ export interface BaseQuestion {
   visual?: VisualConfig;
   explanation?: string;
   tags: string[];
+  _importError?: boolean;
+  _importMessage?: string;
 }
 
 export interface McqOption {
@@ -66,6 +68,10 @@ export interface ExamConfig {
   shuffleOptions: boolean;
   showAnswersAfter: boolean;
   grade: Grade;
+  scopeType?: 'LESSON' | 'TOPIC' | 'MULTI_TOPIC';
+  topicIds?: string[];
+  lessonIds?: string[];
+  partCounts?: { I: number; II: number; III: number };
 }
 
 export interface ExamVersion {
@@ -130,6 +136,8 @@ export interface LearningSession {
   grade: number;
   topic: string;
   goal: string;
+  abilityLevel?: 'WEAK' | 'AVERAGE' | 'GOOD' | 'EXCELLENT';
+  difficultyDistribution?: { recognition: number; understanding: number; application: number; highApplication: number };
   status: LearningStatus;
   diagnosticResult?: { score: number; weakUnits: string[] };
   units: LearningUnit[];
@@ -137,4 +145,8 @@ export interface LearningSession {
   progress: number;
   finalScore?: number;
   startedAt: string;
+  name?: string;
+  assignedStudents?: string[];
+  teacherOverride?: boolean;
+  questions?: any[];
 }
