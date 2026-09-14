@@ -1,0 +1,6 @@
+{
+  "name": "TRỢ LÝ GV TOÁN",
+  "description": "Hệ thống hỗ trợ kiểm tra và đánh giá môn Toán THPT",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
