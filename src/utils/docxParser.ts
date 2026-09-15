@@ -297,8 +297,9 @@ function finalizeQuestion(qDraft: any, questions: Question[], gradeId: number) {
             const content = qDraft.options[k] ? qDraft.options[k].trim() : '';
             if (hasMeaningfulContent(content)) {
                 const optId = uuidv4();
-                optionsList.push({ id: optId, content: content });
-                if (qDraft.correctAnswer === k || (qDraft.answerText && qDraft.answerText.toUpperCase().includes(k))) {
+                const isCorrect = qDraft.correctAnswer === k || (qDraft.answerText && qDraft.answerText.toUpperCase().includes(k));
+                optionsList.push({ id: optId, content: content, isCorrect: isCorrect });
+                if (isCorrect) {
                     correctId = optId;
                     hasAns = true;
                 }
@@ -345,7 +346,7 @@ function finalizeQuestion(qDraft: any, questions: Question[], gradeId: number) {
                 statementsList.push({
                     id: uuidv4(),
                     content: content,
-                    is_correct: isCorrect
+                    isTrue: isCorrect
                 });
             }
         }
@@ -368,10 +369,10 @@ function finalizeQuestion(qDraft: any, questions: Question[], gradeId: number) {
         const shortQ: any = {
             ...baseQ,
             question_type: 'SHORT_ANSWER',
-            correct_answer: qDraft.answerText.replace(/,/g, '.').trim()
+            correctAnswer: qDraft.answerText.replace(/,/g, '.').trim()
         };
         
-        if (!shortQ.correct_answer) {
+        if (!shortQ.correctAnswer) {
             shortQ._importError = true;
             shortQ._importMessage = 'Cần xác định đáp án';
         }
