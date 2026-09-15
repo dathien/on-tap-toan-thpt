@@ -4,7 +4,8 @@ import { useAppStore } from '../store/useAppStore';
 import { ExamConfig, ExamVersion, Question } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { ArrowLeft, Edit, Trash2, ArrowUp, ArrowDown, Plus } from 'lucide-react';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { curriculumData } from '../data/curriculum';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
@@ -244,7 +245,7 @@ export function ExamEditor() {
                       <div className="flex-1">
                           
                           <div className="text-slate-800 line-clamp-2 mb-2">
-                             <MathText text={sanitizeQuestionText(q.content)} />
+                             <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                           </div>
                           
                           {q._importError && (

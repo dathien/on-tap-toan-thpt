@@ -1,7 +1,8 @@
 import React from 'react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { getMockTheory } from '../data/mockTheory';
 import { curriculumData } from '../data/curriculum';
@@ -42,7 +43,7 @@ export function TheoryLesson() {
             <div key={idx} className="space-y-4">
               <h3 className="text-xl font-bold text-slate-800 border-b border-slate-100 pb-2">{section.title}</h3>
               <div className="prose max-w-none text-slate-700">
-                <MathText text={section.content} />
+                <QuestionContentRenderer content={section.content} />
               </div>
               {section.visual && (
                 <div className="mt-4 p-6 bg-slate-50 rounded-xl border border-slate-200 flex justify-center">

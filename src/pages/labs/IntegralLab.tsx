@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { MathText } from '../../components/MathText';
+import { MathRenderer } from '../../components/MathRenderer';
+import { QuestionContentRenderer } from '../../components/QuestionContentRenderer';
 import * as math from 'mathjs';
 
 export function IntegralLab({ onBack }: { onBack: () => void }) {
@@ -60,7 +61,7 @@ export function IntegralLab({ onBack }: { onBack: () => void }) {
 
           {result !== null && (
             <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200 flex flex-col items-center justify-center space-y-4 text-2xl">
-              <MathText text={`\\int_{${a}}^{${b}} (${funcStr}) dx \\approx ${result}`} />
+              <MathRenderer value={`\\int_{${a}}^{${b}} (${funcStr}) dx \\approx ${result}`} />
             </div>
           )}
         </div>

@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { getQuestions as fetchQuestions } from '../utils/questionSelector';
 import { Compass, Search, Zap, Trophy, Crown, Gem, CheckCircle2, XCircle, ArrowRight, RotateCcw } from 'lucide-react';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { getGridClass } from '../utils/layout';
 import { QuestionEditorModal } from '../components/QuestionEditorModal';
 import { Edit } from 'lucide-react';
@@ -288,7 +289,7 @@ export function TreasureHunt() {
               </button>
           )}
           <div className="question-content question-text text-lg text-slate-800 mb-6">
-            <MathText text={sanitizeQuestionText(q.content)} />
+            <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
           </div>
           <VisualRenderer visual={q.visual} />
           
@@ -329,7 +330,7 @@ export function TreasureHunt() {
                     {String.fromCharCode(65 + oIdx)}
                   </span>
                   <span className="answer-content font-medium pt-0.5">
-                    <MathText text={sanitizeQuestionText(opt.content)} />
+                    <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                   </span>
                 </button>
               );

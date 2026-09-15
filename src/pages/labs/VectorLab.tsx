@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { MathText } from '../../components/MathText';
+import { MathRenderer } from '../../components/MathRenderer';
+import { QuestionContentRenderer } from '../../components/QuestionContentRenderer';
 
 export function VectorLab({ onBack }: { onBack: () => void }) {
   const [mode, setMode] = useState<'oxy'|'oxyz'>('oxy');
@@ -64,12 +65,12 @@ export function VectorLab({ onBack }: { onBack: () => void }) {
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
             <h3 className="font-bold text-lg border-b pb-2">Kết quả Tính toán</h3>
             <div className="space-y-3 text-lg">
-              <MathText text={`\\vec{u} + \\vec{v} = (${u.x + v.x}; ${u.y + v.y}${mode === 'oxyz' ? `; ${u.z + v.z}` : ''})`} />
-              <MathText text={`\\vec{u} - \\vec{v} = (${u.x - v.x}; ${u.y - v.y}${mode === 'oxyz' ? `; ${u.z - v.z}` : ''})`} />
-              <MathText text={`${k}\\vec{u} = (${k * u.x}; ${k * u.y}${mode === 'oxyz' ? `; ${k * u.z}` : ''})`} />
-              <MathText text={`|\\vec{u}| = ${lenU.toFixed(2)}`} />
-              <MathText text={`\\vec{u} \\cdot \\vec{v} = ${dot}`} />
-              <MathText text={`(\\vec{u}, \\vec{v}) \\approx ${angleDeg.toFixed(1)}^\\circ`} />
+              <MathRenderer value={`\\vec{u} + \\vec{v} = (${u.x + v.x}; ${u.y + v.y}${mode === 'oxyz' ? `; ${u.z + v.z}` : ''})`} />
+              <MathRenderer value={`\\vec{u} - \\vec{v} = (${u.x - v.x}; ${u.y - v.y}${mode === 'oxyz' ? `; ${u.z - v.z}` : ''})`} />
+              <MathRenderer value={`${k}\\vec{u} = (${k * u.x}; ${k * u.y}${mode === 'oxyz' ? `; ${k * u.z}` : ''})`} />
+              <MathRenderer value={`|\\vec{u}| = ${lenU.toFixed(2)}`} />
+              <MathRenderer value={`\\vec{u} \\cdot \\vec{v} = ${dot}`} />
+              <MathRenderer value={`(\\vec{u}, \\vec{v}) \\approx ${angleDeg.toFixed(1)}^\\circ`} />
             </div>
           </div>
         </div>

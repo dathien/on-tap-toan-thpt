@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { curriculumData } from '../data/curriculum';
 import { useAppStore } from '../store/useAppStore';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
@@ -387,7 +388,7 @@ export function StudentExam() {
           </div>
 
           <div className="text-lg text-slate-800 mb-8 overflow-x-auto">
-            <MathText text={sanitizeQuestionText(currentQuestion.content)} />
+            <QuestionContentRenderer content={sanitizeQuestionText(currentQuestion.content)} />
             <VisualRenderer visual={currentQuestion.visual} />
           </div>
 
@@ -412,7 +413,7 @@ export function StudentExam() {
                         {labels[i]}
                       </span>
                       <div className="answer-content font-medium pt-0.5">
-                        <MathText text={opt.content} />
+                        <QuestionContentRenderer content={opt.content} />
                       </div>
                     </button>
                   );
@@ -430,7 +431,7 @@ export function StudentExam() {
                     <div key={stmt.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
                       <div className="answer-option mb-4 border-none p-0">
                         <span className="answer-label font-bold text-slate-600">{labels[i]})</span>
-                        <div className="answer-content font-medium"><MathText text={stmt.content} /></div>
+                        <div className="answer-content font-medium"><QuestionContentRenderer content={stmt.content} /></div>
                       </div>
                       <div className="flex gap-4">
                         <button

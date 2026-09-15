@@ -1,23 +1,43 @@
-import React, { useState } from 'react';
-import { LineChart, Axis3D, Shapes, Target, Triangle, Maximize } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { LineChart, Axis3D, Shapes, Target, Triangle, Maximize, Search, ArrowLeft, FlaskConical, LayoutGrid, AlertCircle, Brain, PieChart, Layers, Grid3X3, LayoutDashboard } from 'lucide-react';
 import { FunctionGraphLab } from './labs/FunctionGraphLab';
 import { FunctionAnalysisLab } from './labs/FunctionAnalysisLab';
 import { DerivativeLab } from './labs/DerivativeLab';
 import { IntegralLab } from './labs/IntegralLab';
 import { VectorLab } from './labs/VectorLab';
 import { OxyzLab } from './labs/OxyzLab';
+import { LogicLab } from './labs/LogicLab';
+import { SetLab } from './labs/SetLab';
+import { Inequality2DLab } from './labs/Inequality2DLab';
+import { InequalitySystem2DLab } from './labs/InequalitySystem2DLab';
+
+
+import { curriculumData } from '../data/curriculum';
+
+interface LabMeta {
+  id: string;
+  name: string;
+  description: string;
+  icon: any;
+  color: string;
+  bg: string;
+  lessonIds?: string[];
+}
+
+export const LAB_CATALOG: LabMeta[] = [
+  { id: 'function-graph', name: 'Đồ thị hàm số', description: 'Vẽ và khảo sát đồ thị hàm số', icon: LineChart, color: 'text-indigo-600', bg: 'bg-indigo-50', lessonIds: ['l17'] },
+  { id: 'function-analysis', name: 'Khảo sát hàm số', description: 'Sự biến thiên, cực trị, tiệm cận', icon: Target, color: 'text-cyan-600', bg: 'bg-cyan-50', lessonIds: ['l13', 'l14', 'l16', 'l17'] },
+  { id: 'derivative', name: 'Đạo hàm', description: 'Ý nghĩa hình học của đạo hàm, tiếp tuyến', icon: Maximize, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { id: 'integral', name: 'Tích phân', description: 'Tính tích phân và diện tích hình phẳng', icon: Shapes, color: 'text-amber-600', bg: 'bg-amber-50', lessonIds: ['l24', 'l25'] },
+  { id: 'vector', name: 'Vector', description: 'Các phép toán vector trong Oxy và Oxyz', icon: Triangle, color: 'text-purple-600', bg: 'bg-purple-50', lessonIds: ['l19'] },
+  { id: 'oxyz', name: 'Oxyz', description: 'Hệ tọa độ trong không gian', icon: Axis3D, color: 'text-pink-600', bg: 'bg-pink-50', lessonIds: ['l18'] },
+];
 
 export function MathLab() {
   const [activeLab, setActiveLab] = useState<string | null>(null);
-
-  const tools = [
-    { id: 'function-graph', name: 'Đồ thị hàm số', icon: LineChart, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-    { id: 'function-analysis', name: 'Khảo sát hàm số', icon: Target, color: 'text-cyan-600', bg: 'bg-cyan-50' },
-    { id: 'derivative', name: 'Đạo hàm', icon: Maximize, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { id: 'integral', name: 'Tích phân', icon: Shapes, color: 'text-amber-600', bg: 'bg-amber-50' },
-    { id: 'vector', name: 'Vector', icon: Triangle, color: 'text-purple-600', bg: 'bg-purple-50' },
-    { id: 'oxyz', name: 'Oxyz', icon: Axis3D, color: 'text-pink-600', bg: 'bg-pink-50' },
-  ];
+  const [selectedGrade, setSelectedGrade] = useState<number | 'ALL'>('ALL');
+  const [selectedSemester, setSelectedSemester] = useState<number | 'ALL'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const renderActiveLab = () => {
     switch (activeLab) {
@@ -27,91 +47,190 @@ export function MathLab() {
       case 'integral': return <IntegralLab onBack={() => setActiveLab(null)} />;
       case 'vector': return <VectorLab onBack={() => setActiveLab(null)} />;
       case 'oxyz': return <OxyzLab onBack={() => setActiveLab(null)} />;
+      case 'logic': return <LogicLab onBack={() => setActiveLab(null)} />;
+      case 'sets': return <SetLab onBack={() => setActiveLab(null)} mode="SET" />;
+      case 'set-operations': return <SetLab onBack={() => setActiveLab(null)} mode="OPERATIONS" />;
+      case 'inequality-2d': return <Inequality2DLab onBack={() => setActiveLab(null)} />;
+      case 'inequality-system-2d': return <InequalitySystem2DLab onBack={() => setActiveLab(null)} />;
+
       default: return null;
     }
   };
 
+  const getLabsForLesson = (lessonId: string) => {
+    return LAB_CATALOG.filter(lab => lab.lessonIds?.includes(lessonId));
+  };
+
+  const filteredTopics = useMemo(() => {
+    let result: { grade: number, topic: any }[] = [];
+    if (selectedGrade === 'ALL') {
+      [10, 11, 12].forEach(g => {
+        (curriculumData[g as 10|11|12] || []).forEach(t => result.push({ grade: g, topic: t }));
+      });
+    } else {
+      (curriculumData[selectedGrade as 10|11|12] || []).forEach(t => result.push({ grade: selectedGrade, topic: t }));
+    }
+    
+    if (selectedSemester !== 'ALL') {
+      result = result.filter(item => item.topic.semester === selectedSemester || item.topic.semester === 'NEEDS_CURRICULUM_MAPPING');
+    }
+    
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.map(item => {
+        const filteredLessons = item.topic.lessons.filter((l: any) => 
+          l.name.toLowerCase().includes(q) || 
+          item.topic.name.toLowerCase().includes(q) ||
+          getLabsForLesson(l.id).some(lab => lab.name.toLowerCase().includes(q))
+        );
+        return { ...item, topic: { ...item.topic, lessons: filteredLessons } };
+      }).filter(item => item.topic.lessons.length > 0);
+    }
+    
+    return result;
+  }, [selectedGrade, selectedSemester, searchQuery]);
+
   if (activeLab) {
     return (
-      <div className="max-w-7xl mx-auto h-[calc(100vh-8rem)]">
+      <div className="max-w-7xl mx-auto min-h-[calc(100vh-8rem)] overflow-y-auto pb-12">
         {renderActiveLab()}
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-[#172033]">Phòng Lab Toán học</h2>
-        <p className="text-slate-500 mt-2 text-lg">Khám phá và trực quan hóa các mô hình toán học.</p>
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {tools.map(tool => (
-          <button 
-            key={tool.id} 
-            onClick={() => setActiveLab(tool.id)}
-            className="bg-white p-4 rounded-[20px] shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center justify-center gap-3 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-          >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${tool.bg} ${tool.color}`}>
-              <tool.icon size={24} />
-            </div>
-            <span className="font-semibold text-slate-700 text-sm text-center">{tool.name}</span>
-          </button>
-        ))}
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white rounded-[20px] shadow-sm border border-slate-200 p-6">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">Đồ thị hàm số: y = x³ - 3x</h3>
-          <div className="bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-4 border border-slate-200">
-            <svg viewBox="-5 -5 10 10" className="w-full max-w-sm h-auto drop-shadow-md">
-              <g stroke="#e2e8f0" strokeWidth="0.1">
-                {[-4, -3, -2, -1, 1, 2, 3, 4].map(i => (
-                  <React.Fragment key={i}>
-                    <line x1={i} y1="-5" x2={i} y2="5" />
-                    <line x1="-5" y1={i} x2="5" y2={i} />
-                  </React.Fragment>
-                ))}
-              </g>
-              <line x1="-5" y1="0" x2="5" y2="0" stroke="#94a3b8" strokeWidth="0.15" />
-              <line x1="0" y1="-5" x2="0" y2="5" stroke="#94a3b8" strokeWidth="0.15" />
-              <path 
-                d="M -3 18 L -2.5 8.125 L -2 2 L -1.5 -1.125 L -1 -2 L -0.5 -1.375 L 0 0 L 0.5 1.375 L 1 2 L 1.5 1.125 L 2 -2 L 2.5 -8.125 L 3 -18" 
-                fill="none" 
-                stroke="#4F46E5" 
-                strokeWidth="0.15" 
-                strokeLinecap="round" 
-                strokeLinejoin="round" 
-              />
-            </svg>
-          </div>
+    <div className="max-w-7xl mx-auto space-y-6 pb-12">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold text-[#172033] flex items-center gap-2">
+            <FlaskConical className="text-indigo-600" />
+            Phòng Lab Toán Học
+          </h2>
+          <p className="text-slate-500 mt-2 text-lg">Mô phỏng, trực quan hóa và tương tác với các khái niệm toán học.</p>
         </div>
         
-        <div className="bg-white rounded-[20px] shadow-sm border border-slate-200 p-6">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">Hình học không gian: Hình chóp S.ABCD</h3>
-          <div className="bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center p-4 border border-slate-200">
-             <svg viewBox="0 0 200 200" className="w-full max-w-sm h-auto">
-               <polygon points="100,20 40,150 160,150" fill="rgba(79, 70, 229, 0.1)" stroke="#4F46E5" strokeWidth="2" strokeLinejoin="round" />
-               <polygon points="100,20 160,150 130,120" fill="rgba(6, 182, 212, 0.1)" stroke="#06B6D4" strokeWidth="2" strokeLinejoin="round" />
-               <line x1="100" y1="20" x2="80" y2="120" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-               <line x1="40" y1="150" x2="80" y2="120" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-               <line x1="160" y1="150" x2="80" y2="120" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-               <line x1="130" y1="120" x2="80" y2="120" stroke="#94a3b8" strokeWidth="2" strokeDasharray="5,5" />
-               <circle cx="100" cy="20" r="3" fill="#172033" />
-               <circle cx="40" cy="150" r="3" fill="#172033" />
-               <circle cx="160" cy="150" r="3" fill="#172033" />
-               <circle cx="130" cy="120" r="3" fill="#172033" />
-               <circle cx="80" cy="120" r="3" fill="#94a3b8" />
-               <text x="95" y="15" fill="#172033" fontSize="12" fontWeight="bold">S</text>
-               <text x="25" y="160" fill="#172033" fontSize="12" fontWeight="bold">A</text>
-               <text x="165" y="160" fill="#172033" fontSize="12" fontWeight="bold">B</text>
-               <text x="135" y="115" fill="#172033" fontSize="12" fontWeight="bold">C</text>
-               <text x="65" y="115" fill="#94a3b8" fontSize="12" fontWeight="bold">D</text>
-             </svg>
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+          <input
+            type="text"
+            placeholder="Tìm kiếm bài học, tên Lab..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none w-full md:w-72 shadow-sm"
+          />
         </div>
       </div>
+
+      <div className="bg-white rounded-[20px] shadow-sm border border-slate-200 p-2 md:p-4">
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button
+            onClick={() => { setSelectedGrade('ALL'); setSelectedSemester('ALL'); }}
+            className={`px-4 py-2 rounded-xl font-medium transition-colors ${selectedGrade === 'ALL' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+          >
+            TẤT CẢ LAB
+          </button>
+          {[10, 11, 12].map(g => (
+            <button
+              key={g}
+              onClick={() => { setSelectedGrade(g); setSelectedSemester('ALL'); }}
+              className={`px-4 py-2 rounded-xl font-medium transition-colors ${selectedGrade === g ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+            >
+              Khối {g}
+            </button>
+          ))}
+        </div>
+
+        {selectedGrade !== 'ALL' && (
+          <div className="flex flex-wrap gap-2 pl-2 border-l-2 border-indigo-100">
+            <button
+              onClick={() => setSelectedSemester('ALL')}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedSemester === 'ALL' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+            >
+              Cả năm
+            </button>
+            {[1, 2].map(s => (
+              <button
+                key={s}
+                onClick={() => setSelectedSemester(s)}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedSemester === s ? 'bg-indigo-600 text-white' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'}`}
+              >
+                Học kỳ {s === 1 ? 'I' : 'II'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {selectedGrade === 'ALL' && !searchQuery ? (
+        <div>
+          <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+            <LayoutGrid className="text-indigo-600" /> Danh sách toàn bộ Lab hiện có
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {LAB_CATALOG.map(tool => (
+              <button 
+                key={tool.id} 
+                onClick={() => setActiveLab(tool.id)}
+                className="bg-white p-5 rounded-[20px] shadow-sm border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all flex flex-col items-center text-center gap-3 group"
+              >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${tool.bg} ${tool.color} group-hover:scale-110 transition-transform`}>
+                  <tool.icon size={28} />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800">{tool.name}</div>
+                  <div className="text-xs text-slate-500 mt-1">{tool.description}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {filteredTopics.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
+              <Search className="mx-auto text-slate-300 mb-3" size={48} />
+              <p className="text-slate-500 text-lg">Không tìm thấy chủ đề hoặc bài học nào phù hợp.</p>
+            </div>
+          ) : (
+            filteredTopics.map((item, idx) => (
+              <div key={`${item.grade}-${item.topic.id}-${idx}`} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+                <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
+                  <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+                    <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-md">Khối {item.grade}</span>
+                    {item.topic.name}
+                  </h3>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {item.topic.lessons.map((lesson: any) => {
+                    const labs = getLabsForLesson(lesson.id);
+                    return (
+                      <div key={lesson.id} className="p-5 hover:bg-slate-50/50 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                          <div className="font-semibold text-slate-800">{lesson.name}</div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {labs.length > 0 && (
+                            labs.map(lab => (
+                              <button
+                                key={lab.id}
+                                onClick={() => setActiveLab(lab.id)}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${lab.bg} ${lab.color} hover:shadow-sm hover:scale-105 border border-transparent hover:border-current/20`}
+                              >
+                                <lab.icon size={16} />
+                                {lab.name}
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

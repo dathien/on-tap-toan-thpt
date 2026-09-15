@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Plus, Search, Filter, Edit, Trash2 } from 'lucide-react';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
 import { QuestionEditorModal } from '../components/QuestionEditorModal';
@@ -170,7 +171,7 @@ export function Bank() {
                   </div>
                 </div>
                 <div className="text-slate-800 line-clamp-3">
-                  <MathText text={sanitizeQuestionText(q.content)} />
+                  <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                   <VisualRenderer visual={q.visual} />
                 </div>
               </div>

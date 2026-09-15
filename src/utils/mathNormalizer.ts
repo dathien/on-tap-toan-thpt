@@ -1,52 +1,31 @@
-export function normalizeMathToken(value: string | undefined | null): string {
+export function normalizeMathExpression(value: string | undefined | null): string {
   if (value === undefined || value === null) return "";
-  let v = String(value);
-
-  // If the ENTIRE string is just a math token (common in VariationTable)
-  const noSpace = v.trim().replace(/\s+/g, "").replace(/−/g, "-");
+  let v = String(value).trim();
   
-  const map: Record<string, string> = {
-    "infty": "\\infty",
-    "inf": "\\infty",
-    "∞": "\\infty",
-    "\\infty": "\\infty",
-
-    "+infty": "+\\infty",
-    "+inf": "+\\infty",
-    "+∞": "+\\infty",
-    "+\\infty": "+\\infty",
-
-    "-infty": "-\\infty",
-    "-inf": "-\\infty",
-    "-∞": "-\\infty",
-    "-\\infty": "-\\infty"
-  };
-
-  // If it's exactly one of those tokens, return the exact replacement!
-  if (map[noSpace]) {
-    return map[noSpace];
-  }
-
-  // Otherwise, it might be a full sentence or a wrapped "$...$" expression.
-  // We should NOT strip spaces. We'll just do safe word replacements.
+  // Replace missing backslashes or unicode math symbols
+  v = v.replace(/∞/g, "\\infty");
+  v = v.replace(/±/g, "\\pm");
+  v = v.replace(/⇔/g, "\\Leftrightarrow");
+  v = v.replace(/⇒/g, "\\Rightarrow");
+  v = v.replace(/≥/g, "\\ge");
+  v = v.replace(/≤/g, "\\le");
+  v = v.replace(/≠/g, "\\neq");
   v = v.replace(/−/g, "-");
   
-  // Replace missing backslash infty with sign
-  v = v.replace(/-\s*infty\b/g, "-\\infty");
-  v = v.replace(/\+\s*infty\b/g, "+\\infty");
-  v = v.replace(/-\s*inf\b/g, "-\\infty");
-  v = v.replace(/\+\s*inf\b/g, "+\\infty");
-  v = v.replace(/-\s*∞/g, "-\\infty");
-  v = v.replace(/\+\s*∞/g, "+\\infty");
-  
-  // Then replace standalone infty missing backslash
+  // Normalize missing backslashes for common commands if they are isolated
   v = v.replace(/(^|[^\\])\binfty\b/g, "$1\\infty");
   v = v.replace(/(^|[^\\])\binf\b/g, "$1\\infty");
-  v = v.replace(/∞/g, "\\infty");
-
+  v = v.replace(/(^|[^\\])\blim\b/g, "$1\\lim");
+  v = v.replace(/(^|[^\\])\bsin\b/g, "$1\\sin");
+  v = v.replace(/(^|[^\\])\bcos\b/g, "$1\\cos");
+  v = v.replace(/(^|[^\\])\btan\b/g, "$1\\tan");
+  
   return v;
 }
 
+export function normalizeMathToken(value: string | undefined | null): string {
+  return normalizeMathExpression(value);
+}
 export function normalizeMathValue(value: string | undefined | null): string {
-  return normalizeMathToken(value);
+  return normalizeMathExpression(value);
 }

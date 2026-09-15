@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { Question } from '../types';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
@@ -225,7 +226,7 @@ export function WordImport() {
                 </div>
                 
                 <div className="text-slate-800 mb-6">
-                  <MathText text={sanitizeQuestionText(q.content)} />
+                  <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                   <VisualRenderer visual={q.visual} />
                 </div>
 
@@ -236,7 +237,7 @@ export function WordImport() {
                         <span className={`answer-label w-6 h-6 rounded-full font-bold text-sm ${opt.isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'}`}>
                           {['A','B','C','D'][i]}
                         </span>
-                        <div className="answer-content text-sm"><MathText text={opt.content} /></div>
+                        <div className="answer-content text-sm"><QuestionContentRenderer content={opt.content} /></div>
                       </div>
                     ))}
                   </div>
@@ -247,7 +248,7 @@ export function WordImport() {
                     {q.statements.map((stmt: any, i: number) => (
                       <div key={stmt.id} className="answer-option p-4 rounded-xl border border-slate-100 bg-slate-50">
                         <span className="answer-label font-bold text-slate-500">{['a','b','c','d'][i]})</span>
-                        <div className="answer-content text-sm"><MathText text={stmt.content} /></div>
+                        <div className="answer-content text-sm"><QuestionContentRenderer content={stmt.content} /></div>
                         <span className={`px-3 py-1 rounded-md text-sm font-bold ${stmt.isTrue ? 'bg-emerald-100 text-emerald-700' : 'bg-orange-100 text-orange-700'}`}>
                           {stmt.isTrue ? 'ĐÚNG' : 'SAI'}
                         </span>

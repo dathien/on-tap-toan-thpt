@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { v4 as uuidv4 } from 'uuid';
 import { Question, QuestionType, McqOption, TrueFalseStatement } from '../types';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
@@ -271,7 +272,7 @@ export function QuestionEditor() {
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 min-h-[150px]">
             <h3 className="font-bold text-slate-800 mb-4">Xem trước nội dung</h3>
             <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 prose max-w-none">
-              <MathText text={sanitizeQuestionText(content) || 'Chưa có nội dung'} />
+              <QuestionContentRenderer content={sanitizeQuestionText(content) || 'Chưa có nội dung'} />
               <VisualRenderer visual={visual} />
             </div>
           </div>

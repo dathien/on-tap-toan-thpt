@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Question, QuestionType, McqOption, TrueFalseStatement, VisualConfig } from '../types';
-import { MathText } from './MathText';
+import { MathRenderer } from './MathRenderer';
+import { QuestionContentRenderer } from './QuestionContentRenderer';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from './visuals/VisualRenderer';
 import { VariationTableEditor } from './visuals/VariationTableEditor';
@@ -329,7 +330,7 @@ export function QuestionEditorModal({ initialQuestion, onSave, onCancel, isEmbed
               </div>
               <div className="p-5 overflow-y-auto flex-1">
                 <div className="question-content question-text text-slate-800 text-lg mb-4">
-                  <MathText text={sanitizeQuestionText(content) || 'Nội dung câu hỏi...'} />
+                  <QuestionContentRenderer content={sanitizeQuestionText(content) || 'Nội dung câu hỏi...'} />
                 </div>
                 {visual && (
                   <div className="mb-6 flex justify-center">
@@ -344,7 +345,7 @@ export function QuestionEditorModal({ initialQuestion, onSave, onCancel, isEmbed
                             {mcqOptions.map((opt, i) => (
                                 <div key={opt.id} className={clsx("p-4 rounded-xl border-2 transition-colors", showPreviewAnswers && opt.isCorrect ? "border-indigo-500 bg-indigo-50" : "border-slate-100 bg-white")}>
                                     <span className="font-bold text-slate-700 mr-2">{['A.', 'B.', 'C.', 'D.'][i]}</span>
-                                    <MathText text={sanitizeQuestionText(opt.content)} />
+                                    <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                                 </div>
                             ))}
                         </div>
@@ -354,7 +355,7 @@ export function QuestionEditorModal({ initialQuestion, onSave, onCancel, isEmbed
                             {tfStatements.map((stmt, i) => (
                                 <div key={stmt.id} className={clsx("flex gap-3 p-4 rounded-xl border-2", showPreviewAnswers ? (stmt.isTrue ? "border-emerald-200 bg-emerald-50" : "border-rose-200 bg-rose-50") : "border-slate-100 bg-white")}>
                                     <div className="font-bold text-slate-700">{['a)', 'b)', 'c)', 'd)'][i]}</div>
-                                    <div className="flex-1"><MathText text={sanitizeQuestionText(stmt.content)} /></div>
+                                    <div className="flex-1"><QuestionContentRenderer content={sanitizeQuestionText(stmt.content)} /></div>
                                     {showPreviewAnswers && (
                                         <div className={clsx("font-bold text-sm", stmt.isTrue ? "text-emerald-700" : "text-rose-700")}>{stmt.isTrue ? "ĐÚNG" : "SAI"}</div>
                                     )}
@@ -372,7 +373,7 @@ export function QuestionEditorModal({ initialQuestion, onSave, onCancel, isEmbed
                 {showPreviewAnswers && explanation && (
                     <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
                         <div className="font-bold text-amber-800 mb-2">Lời giải:</div>
-                        <div className="text-amber-900"><MathText text={explanation} /></div>
+                        <div className="text-amber-900"><QuestionContentRenderer content={explanation} /></div>
                     </div>
                 )}
               </div>

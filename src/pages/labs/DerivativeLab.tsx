@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import * as math from 'mathjs';
-import { MathText } from '../../components/MathText';
+import { MathRenderer } from '../../components/MathRenderer';
+import { QuestionContentRenderer } from '../../components/QuestionContentRenderer';
 
 export function DerivativeLab({ onBack }: { onBack: () => void }) {
   const [funcStr, setFuncStr] = useState('x^2');
@@ -54,11 +55,11 @@ export function DerivativeLab({ onBack }: { onBack: () => void }) {
 
           {result && (
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4 text-lg">
-              <p><MathText text={`f'(x) = ${result.deriv}`} /></p>
-              <p><MathText text={`f'(${x0}) = ${result.val}`} /></p>
+              <p><MathRenderer value={`f'(x) = ${result.deriv}`} /></p>
+              <p><MathRenderer value={`f'(${x0}) = ${result.val}`} /></p>
               <div className="mt-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
                 <p className="font-semibold mb-2">Phương trình tiếp tuyến tại $x_0 = {x0}$:</p>
-                <MathText text={`y = ${result.val}(x - ${x0}) + ${result.fVal}`} />
+                <MathRenderer value={`y = ${result.val}(x - ${x0}) + ${result.fVal}`} />
               </div>
             </div>
           )}

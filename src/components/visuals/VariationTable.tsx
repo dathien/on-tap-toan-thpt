@@ -1,5 +1,6 @@
 import React from 'react';
-import { MathText } from '../MathText';
+import { MathRenderer } from '../MathRenderer';
+import { QuestionContentRenderer } from '../QuestionContentRenderer';
 import { normalizeMathToken } from '../../utils/mathNormalizer';
 
 const safeText = (value: any, fallback = "") => {
@@ -100,7 +101,7 @@ export function VariationTable({ data }: { data: any }) {
         {/* Row x */}
         <div className="flex border-b-2 border-slate-800">
           <div className="w-12 md:w-16 border-r-2 border-slate-800 p-2 font-bold flex items-center justify-center shrink-0">
-            <MathText className="math-token" text="$x$" />
+            <MathRenderer className="math-token" value="x" />
           </div>
           <div 
             className="flex-1 grid px-4 py-2" 
@@ -112,7 +113,7 @@ export function VariationTable({ data }: { data: any }) {
               
               if (isPoint) {
                  const textValue = safeText(xPoints[pointIndex]?.value);
-                 return <div key={"x-" + colIndex} className="text-center font-medium flex items-center justify-center">{textValue ? <MathText className="math-token" text={"$" + textValue + "$"} /> : null}</div>
+                 return <div key={"x-" + colIndex} className="text-center font-medium flex items-center justify-center">{textValue ? <MathRenderer className="math-token" value={textValue} /> : null}</div>
               }
               return <div key={"x-space-" + colIndex}></div>;
             })}
@@ -122,7 +123,7 @@ export function VariationTable({ data }: { data: any }) {
         {/* Row y' */}
         <div className="flex border-b-2 border-slate-800">
           <div className="w-12 md:w-16 border-r-2 border-slate-800 p-2 font-bold flex items-center justify-center shrink-0">
-            <MathText className="math-token" text="$y'$" />
+            <MathRenderer className="math-token" value="y'" />
           </div>
           <div 
             className="flex-1 grid px-4 py-2" 
@@ -148,10 +149,10 @@ export function VariationTable({ data }: { data: any }) {
                  
                  const dpVal = derivative.pointValues?.find((p: any) => p.x === pt.value);
                  const cVal = dpVal ? safeText(dpVal.value) : (pt?.type === 'critical' ? safeText(derivative.criticalValues?.[criticalCounter++]) : "");
-                 return <div key={"yp-" + colIndex} className="text-center font-medium flex items-center justify-center">{cVal ? <MathText className="math-token" text={"$" + cVal + "$"} /> : null}</div>
+                 return <div key={"yp-" + colIndex} className="text-center font-medium flex items-center justify-center">{cVal ? <MathRenderer className="math-token" value={cVal} /> : null}</div>
               } else {
                  const intervalVal = safeText(derivative.intervals?.[intervalIndex]);
-                 return <div key={"yp-int-" + colIndex} className="text-center font-bold flex items-center justify-center">{intervalVal ? <MathText className="math-token" text={"$" + intervalVal + "$"} /> : null}</div>;
+                 return <div key={"yp-int-" + colIndex} className="text-center font-bold flex items-center justify-center">{intervalVal ? <MathRenderer className="math-token" value={intervalVal} /> : null}</div>;
               }
             })}
           </div>
@@ -160,7 +161,7 @@ export function VariationTable({ data }: { data: any }) {
         {/* Row y */}
         <div className="flex min-h-[100px]">
           <div className="w-12 md:w-16 border-r-2 border-slate-800 p-2 font-bold flex items-center justify-center shrink-0">
-            <MathText className="math-token" text="$y$" />
+            <MathRenderer className="math-token" value="y" />
           </div>
           <div 
             className="flex-1 grid px-4" 
@@ -190,12 +191,12 @@ export function VariationTable({ data }: { data: any }) {
                      <div key={"y-" + colIndex} className="flex justify-center h-full w-full relative min-w-[40px]">
                        {leftLimObj && leftText && (
                          <div className={`absolute ${leftClass} right-1/2 pr-1 md:pr-2 whitespace-nowrap`}>
-                           <MathText className="math-token" text={"$" + leftText + "$"} />
+                           <MathRenderer className="math-token" value={leftText} />
                          </div>
                        )}
                        {rightLimObj && rightText && (
                          <div className={`absolute ${rightClass} left-1/2 pl-1 md:pl-2 whitespace-nowrap`}>
-                           <MathText className="math-token" text={"$" + rightText + "$"} />
+                           <MathRenderer className="math-token" value={rightText} />
                          </div>
                        )}
                        <div className="border-l border-r border-slate-800 w-1 mx-[-2px] h-full absolute left-1/2 -translate-x-1/2"></div>
@@ -207,7 +208,7 @@ export function VariationTable({ data }: { data: any }) {
                  const alignment = getAlignment(pointIndex);
                  return (
                    <div key={"y-" + colIndex} className={`flex justify-center w-full ${alignment} font-medium`}>
-                     {yVal ? <MathText className="math-token" text={"$" + yVal + "$"} /> : null}
+                     {yVal ? <MathRenderer className="math-token" value={yVal} /> : null}
                    </div>
                  );
               } else {

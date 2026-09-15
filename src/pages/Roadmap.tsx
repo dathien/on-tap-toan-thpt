@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { getQuestions as fetchQuestions } from '../utils/questionSelector';
 import { Rocket, Zap, BookOpen, PenTool, CheckCircle2, BarChart2, RotateCcw, ChevronLeft, ArrowRight, Play, CheckCircle, Gamepad2, User, FileText } from 'lucide-react';
-import { MathText } from '../components/MathText';
+import { MathRenderer } from '../components/MathRenderer';
+import { QuestionContentRenderer } from '../components/QuestionContentRenderer';
 import { getGridClass } from '../utils/layout';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { VisualRenderer } from '../components/visuals/VisualRenderer';
@@ -609,13 +610,13 @@ const handleStartSetup = () => {
                                 </div>
                                 <button onClick={() => setEditingQuestion(q)} className="text-indigo-600 hover:text-indigo-800 font-bold text-sm flex items-center gap-1"><Edit size={14} /> Sửa</button>
                             </div>
-                            <div className="text-slate-800 font-medium"><MathText text={sanitizeQuestionText(q.content)} /></div>
+                            <div className="text-slate-800 font-medium"><QuestionContentRenderer content={sanitizeQuestionText(q.content)} /></div>
                             {q.question_type === 'MCQ_SINGLE' && q.options && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                                    {q.options.map((opt: any, oIdx: number) => (
                                       <div key={opt.id} className={`p-3 rounded-lg border ${opt.id === q.correct_option_id ? 'border-green-500 bg-green-50 font-semibold' : 'border-slate-200 bg-slate-50'}`}>
                                          <span className="mr-2 font-bold">{['A', 'B', 'C', 'D'][oIdx]}.</span>
-                                         <MathText text={sanitizeQuestionText(opt.content)} />
+                                         <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                                       </div>
                                    ))}
                                 </div>
@@ -888,7 +889,7 @@ const handleStartSetup = () => {
                   <div key={q.id}>
                     <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
                     <div className="question-content question-text mb-4 text-slate-800 text-lg">
-                        <MathText text={sanitizeQuestionText(q.content)} />
+                        <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                       </div>
                     <VisualRenderer visual={q.visual} />
                     
@@ -917,7 +918,7 @@ const handleStartSetup = () => {
                             {String.fromCharCode(65 + oIdx)}
                           </span>
                           <span className="answer-content text-slate-700 font-medium pt-0.5">
-                              <MathText text={sanitizeQuestionText(opt.content)} />
+                              <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                             </span>
                         </label>
                       ))}
@@ -1061,10 +1062,10 @@ const handleStartSetup = () => {
                     <h3 className="text-xl font-bold text-slate-800 mb-4">Ví dụ minh họa</h3>
                     <div className="p-6 border border-slate-200 rounded-xl">
                        <div className="font-semibold text-slate-700 mb-2">Đề bài:</div>
-                       <MathText text="Tìm tập xác định của hàm số $y = sqrt{x - 1}$" />
+                       <QuestionContentRenderer content="Tìm tập xác định của hàm số $y = sqrt{x - 1}$" />
                        <div className="mt-6 font-semibold text-emerald-700 mb-2">Hướng dẫn giải:</div>
                        <div className="p-4 bg-emerald-50 rounded-lg text-emerald-900">
-                         <MathText text="Điều kiện xác định: $x - 1 ge 0 Leftrightarrow x ge 1$. Vậy $D = [1; +infty)$" />
+                         <QuestionContentRenderer content="Điều kiện xác định: $x - 1 ge 0 Leftrightarrow x ge 1$. Vậy $D = [1; +infty)$" />
                        </div>
                     </div>
                     <div className="flex justify-end pt-8">
@@ -1103,7 +1104,7 @@ const handleStartSetup = () => {
                           <div key={q.id} className="p-6 border border-slate-200 rounded-xl">
                             <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
                             <div className="question-content question-text mb-4 text-slate-800 text-lg">
-                        <MathText text={sanitizeQuestionText(q.content)} />
+                        <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                       </div>
                             <div className={getGridClass((q as any).options) + " mt-4"}>
                               {(q as any).options?.map((opt: any, oIdx: number) => (
@@ -1129,7 +1130,7 @@ const handleStartSetup = () => {
                                     {String.fromCharCode(65 + oIdx)}
                                   </span>
                                   <span className="answer-content text-slate-700 font-medium pt-0.5">
-                              <MathText text={sanitizeQuestionText(opt.content)} />
+                              <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                             </span>
                                 </label>
                               ))}
@@ -1309,7 +1310,7 @@ const handleStartSetup = () => {
                     <div key={q.id}>
                       <div className="font-bold text-slate-700 mb-3">Câu {i + 1}:</div>
                       <div className="question-content question-text mb-4 text-slate-800 text-lg">
-                        <MathText text={sanitizeQuestionText(q.content)} />
+                        <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                       </div>
                       <div className={getGridClass((q as any).options) + " mt-4"}>
                         {(q as any).options?.map((opt: any, oIdx: number) => (
@@ -1335,7 +1336,7 @@ const handleStartSetup = () => {
                               {String.fromCharCode(65 + oIdx)}
                             </span>
                             <span className="answer-content text-slate-700 font-medium pt-0.5">
-                              <MathText text={sanitizeQuestionText(opt.content)} />
+                              <QuestionContentRenderer content={sanitizeQuestionText(opt.content)} />
                             </span>
                           </label>
                         ))}

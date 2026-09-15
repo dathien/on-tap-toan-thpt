@@ -1,0 +1,15 @@
+const fs = require('fs');
+let code = fs.readFileSync('src/utils/mathNormalizer.ts', 'utf-8');
+code = code.replace(/"\\\\\\\\infty"/g, '"\\\\infty"');
+code = code.replace(/"\\\\\\\\pm"/g, '"\\\\pm"');
+code = code.replace(/"\\\\\\\\Leftrightarrow"/g, '"\\\\Leftrightarrow"');
+code = code.replace(/"\\\\\\\\Rightarrow"/g, '"\\\\Rightarrow"');
+code = code.replace(/"\\\\\\\\ge"/g, '"\\\\ge"');
+code = code.replace(/"\\\\\\\\le"/g, '"\\\\le"');
+code = code.replace(/"\\\\\\\\neq"/g, '"\\\\neq"');
+code = code.replace(/"\\$1\\\\\\\\infty"/g, '"$1\\\\infty"');
+code = code.replace(/"\\$1\\\\\\\\lim"/g, '"$1\\\\lim"');
+code = code.replace(/"\\$1\\\\\\\\sin"/g, '"$1\\\\sin"');
+code = code.replace(/"\\$1\\\\\\\\cos"/g, '"$1\\\\cos"');
+code = code.replace(/"\\$1\\\\\\\\tan"/g, '"$1\\\\tan"');
+fs.writeFileSync('src/utils/mathNormalizer.ts', code);

@@ -1,11 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, ZoomIn, ZoomOut, Trash2, RefreshCw } from 'lucide-react';
 import * as math from 'mathjs';
+import { MathRenderer } from '../../components/MathRenderer';
 
 export function FunctionGraphLab({ onBack }: { onBack: () => void }) {
   const [inputStr, setInputStr] = useState('x^2 - 3*x + 2');
   const [expr, setExpr] = useState('x^2 - 3*x + 2');
   const [error, setError] = useState('');
+
+  const formatLatex = (expression: string) => {
+    try {
+      const node = math.parse(expression);
+      return node.toTex({
+        handler: function (node: any, options: any) {
+          if (node.isOperatorNode && node.op === '*') {
+            return node.args[0].toTex(options) + node.args[1].toTex(options);
+          }
+        }
+      });
+    } catch (e) {
+      return expression;
+    }
+  };
   
   const [scale, setScale] = useState(50); // px per unit
   const [offset, setOffset] = useState({ x: 0, y: 0 }); // offset in px
@@ -138,9 +154,9 @@ export function FunctionGraphLab({ onBack }: { onBack: () => void }) {
           <button 
             key={ex} 
             onClick={() => { setInputStr(ex); setExpr(ex); setError(''); }}
-            className="text-indigo-600 hover:underline"
+            className="text-indigo-600 hover:opacity-80 transition-opacity flex items-center"
           >
-            {ex}
+            <MathRenderer value={formatLatex(ex)} displayMode={false} />
           </button>
         ))}
         
@@ -152,6 +168,9 @@ export function FunctionGraphLab({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="flex-1 relative bg-[#F8FAFC] overflow-hidden min-h-[400px] touch-none">
+        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-4 py-2 rounded-xl border border-slate-200 shadow-sm text-indigo-900 font-medium z-10 pointer-events-none">
+          <MathRenderer value={`f(x) = ${formatLatex(expr)}`} displayMode={false} />
+        </div>
         <svg 
           ref={svgRef}
           width="100%" 

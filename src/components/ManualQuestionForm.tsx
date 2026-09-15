@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Question } from '../types';
 import { QuestionEditorModal } from './QuestionEditorModal';
-import { MathText } from './MathText';
+import { MathRenderer } from './MathRenderer';
+import { QuestionContentRenderer } from './QuestionContentRenderer';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { Edit, Trash2, Plus, Copy } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
@@ -55,7 +56,7 @@ export function ManualQuestionForm({ questions, onChange }: Props) {
               <div className="font-bold text-slate-400 w-8 text-center pt-1">{idx + 1}</div>
               <div className="flex-1">
                 <div className="text-slate-800 line-clamp-2 mb-2">
-                   <MathText text={sanitizeQuestionText(q.content)} />
+                   <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                 </div>
                 {q.visual && <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">Có hình/bảng</span>}
               </div>

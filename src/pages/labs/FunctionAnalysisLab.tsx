@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { MathText } from '../../components/MathText';
+import { MathRenderer } from '../../components/MathRenderer';
+import { QuestionContentRenderer } from '../../components/QuestionContentRenderer';
 import { VariationTable } from '../../components/visuals/VariationTable';
 
 export function FunctionAnalysisLab({ onBack }: { onBack: () => void }) {
@@ -61,27 +62,27 @@ export function FunctionAnalysisLab({ onBack }: { onBack: () => void }) {
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">1. Tập xác định và Đạo hàm</h3>
            <div className="space-y-3 text-slate-700 text-lg">
-             <p><strong>Tập xác định:</strong> <MathText text="D = \mathbb{R}" className="inline" /></p>
-             <p><strong>Đạo hàm:</strong> <MathText text="y' = 3x^2 - 3" className="inline" /></p>
-             <p><strong>Nghiệm $y' = 0$:</strong> <MathText text="3x^2 - 3 = 0 \Leftrightarrow x = \pm 1" className="inline" /></p>
+             <p><strong>Tập xác định:</strong> <MathRenderer value="D = \mathbb{R}" className="inline" /></p>
+             <p><strong>Đạo hàm:</strong> <MathRenderer value="y' = 3x^2 - 3" className="inline" /></p>
+             <p><strong>Nghiệm $y' = 0$:</strong> <MathRenderer value="3x^2 - 3 = 0 \Leftrightarrow x = \pm 1" className="inline" /></p>
            </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">2. Chiều biến thiên và Cực trị</h3>
            <div className="space-y-3 text-slate-700 text-lg">
-             <p><strong>Khoảng đồng biến:</strong> <MathText text="(-\infty; -1)" className="inline" /> và <MathText text="(1; +\infty)" className="inline" /></p>
-             <p><strong>Khoảng nghịch biến:</strong> <MathText text="(-1; 1)" className="inline" /></p>
-             <p><strong>Cực đại:</strong> <MathText text="x = -1, y_{CĐ} = 4" className="inline" /></p>
-             <p><strong>Cực tiểu:</strong> <MathText text="x = 1, y_{CT} = 0" className="inline" /></p>
+             <p><strong>Khoảng đồng biến:</strong> <MathRenderer value="(-\infty; -1)" className="inline" /> và <MathRenderer value="(1; +\infty)" className="inline" /></p>
+             <p><strong>Khoảng nghịch biến:</strong> <MathRenderer value="(-1; 1)" className="inline" /></p>
+             <p><strong>Cực đại:</strong> <MathRenderer value="x = -1, y_{\mathrm{CĐ}} = 4" className="inline" /></p>
+             <p><strong>Cực tiểu:</strong> <MathRenderer value="x = 1, y_{\mathrm{CT}} = 0" className="inline" /></p>
            </div>
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
            <h3 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">3. Giới hạn và Tiệm cận</h3>
            <div className="space-y-3 text-slate-700 text-lg">
-             <p><MathText text="\lim_{x \to -\infty} y = -\infty" className="inline" /></p>
-             <p><MathText text="\lim_{x \to +\infty} y = +\infty" className="inline" /></p>
+             <p><MathRenderer value="\lim_{x \to -\infty} y = -\infty" className="inline" /></p>
+             <p><MathRenderer value="\lim_{x \to +\infty} y = +\infty" className="inline" /></p>
              <p>Không có tiệm cận.</p>
            </div>
         </div>

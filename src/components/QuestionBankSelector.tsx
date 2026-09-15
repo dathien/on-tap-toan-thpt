@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { Question } from '../types';
-import { MathText } from './MathText';
+import { MathRenderer } from './MathRenderer';
+import { QuestionContentRenderer } from './QuestionContentRenderer';
 import { sanitizeQuestionText } from '../utils/textSanitizer';
 import { Check, Search, Sparkles } from 'lucide-react';
 
@@ -13,7 +14,7 @@ interface Props {
 
 export function QuestionBankSelector({ selectedQuestions, onChange, targetCount }: Props) {
   const allQuestions = useAppStore(state => state.questions);
-  const topics = useAppStore(state => state.topics) || [];
+  const topics = useAppStore(state => (state as any).topics) || [];
   
   const [grade, setGrade] = useState<number>(12);
   const [topicId, setTopicId] = useState<string>('ALL');
@@ -121,7 +122,7 @@ export function QuestionBankSelector({ selectedQuestions, onChange, targetCount 
                  <div className="flex-1">
                     <div className="text-sm font-bold text-slate-500 mb-1">Mức độ {q.difficulty} • {q.question_type}</div>
                     <div className="text-slate-800 line-clamp-3">
-                       <MathText text={sanitizeQuestionText(q.content)} />
+                       <QuestionContentRenderer content={sanitizeQuestionText(q.content)} />
                     </div>
                  </div>
                </div>
