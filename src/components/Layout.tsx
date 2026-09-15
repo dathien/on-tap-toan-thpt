@@ -30,9 +30,8 @@ const mainNavItems = [
   { id: 'treasure', label: 'Kho báu Toán học', icon: Gem, path: '/treasure' },
   { id: 'results', label: 'Kết quả học tập', icon: BarChart3, path: '/results' },
   { id: 'classes', label: 'Lớp học', icon: Users, path: '/classes' },
+  { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
 ];
-
-const settingsItem = { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' };
 
 export function Layout() {
   const { settings, currentGrade, setCurrentGrade } = useAppStore();
@@ -51,7 +50,7 @@ export function Layout() {
 
       {/* Sidebar */}
       <aside className={clsx(
-        "bg-[#1F2A44] text-slate-300 w-64 flex-shrink-0 flex flex-col fixed md:sticky top-0 h-screen z-50 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none",
+        "bg-[#1F2A44] text-slate-300 w-64 flex-shrink-0 flex flex-col fixed md:sticky top-0 h-[100dvh] overflow-hidden z-50 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         <div className="p-6 pb-2 hidden md:block border-b border-white/10 mb-4 flex-shrink-0">
@@ -62,7 +61,7 @@ export function Layout() {
           <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider mb-4 line-clamp-2">{settings.description}</p>
         </div>
 
-        <nav className="flex-1 py-4 overflow-y-auto mt-4 md:mt-0 min-h-0">
+        <nav className="flex-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden mt-4 md:mt-0 min-h-0">
           <ul className="space-y-1 px-3">
             {mainNavItems.map((item) => (
               <li key={item.id}>
@@ -85,28 +84,6 @@ export function Layout() {
             ))}
           </ul>
         </nav>
-
-        <div className="mt-auto flex-shrink-0 p-4 border-t border-white/10 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <ul className="space-y-1">
-            <li>
-              <NavLink
-                to={settingsItem.path}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={({ isActive }) => clsx(
-                  "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
-                  isActive ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-900/20" : "hover:bg-white/10 hover:text-white font-medium"
-                )}
-              >
-                {({ isActive }) => (
-                  <>
-                    <settingsItem.icon size={20} className={clsx(isActive ? "text-indigo-100" : "text-slate-400")} />
-                    {settingsItem.label}
-                  </>
-                )}
-              </NavLink>
-            </li>
-          </ul>
-        </div>
       </aside>
 
       {/* Main Content */}
