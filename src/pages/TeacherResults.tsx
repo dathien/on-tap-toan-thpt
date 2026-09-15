@@ -74,9 +74,38 @@ export function TeacherResults() {
   const [selectedStudent, setSelectedStudent] = useState<any | null>(null);
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
 
-  const students = isDemoMode ? DEMO_STUDENTS : [];
   const exams: any[] = isDemoMode ? DEMO_EXAMS : store.exams;
-  const attempts = isDemoMode ? DEMO_ATTEMPTS : store.attempts;
+  
+  const attempts = useMemo(() => {
+    if (isDemoMode) return DEMO_ATTEMPTS;
+    return store.attempts.filter((a: any) => a.status !== 'IN_PROGRESS').map((a: any) => {
+      const version = store.examVersions.find((v: any) => v.id === a.examVersionId);
+      return {
+        ...a,
+        studentId: a.studentName + '-' + a.className,
+        examId: version ? version.examConfigId : a.examVersionId,
+        date: new Date(a.endTime || a.startTime).toISOString(),
+        timeSpent: a.durationUsed || (a.endTime ? Math.floor((a.endTime - a.startTime) / 60000) : 0),
+        score: a.score || 0
+      };
+    });
+  }, [isDemoMode, store.attempts, store.examVersions]);
+
+  const students = useMemo(() => {
+    if (isDemoMode) return DEMO_STUDENTS;
+    const studentMap = new Map();
+    attempts.forEach((a: any) => {
+      if (!studentMap.has(a.studentId)) {
+        studentMap.set(a.studentId, {
+          id: a.studentId,
+          name: a.studentName,
+          classId: a.className,
+          isDemo: false
+        });
+      }
+    });
+    return Array.from(studentMap.values());
+  }, [isDemoMode, attempts]);
 
   const studentStats = useMemo(() => {
     let filtered = students;

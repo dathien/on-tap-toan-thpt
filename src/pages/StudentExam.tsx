@@ -27,6 +27,12 @@ export function StudentExam() {
   const version = examVersions.find(v => v.id === attempt?.examVersionId);
   const config = exams.find(e => e.id === version?.examConfigId);
 
+  const [isReady, setIsReady] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setIsReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>(attempt?.answers || {});
@@ -269,7 +275,16 @@ export function StudentExam() {
     updateAttempt(attemptId!, { answers: newAnswers });
   };
 
-  if (!attempt || !version || !config) return <div>Đang tải...</div>;
+  if (!isReady) return <div>Đang tải...</div>;
+  if (!attempt || !version || !config) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 w-full max-w-md text-center">
+        <h1 className="text-xl font-bold text-slate-800 mb-2">Dữ liệu bài thi không khả dụng</h1>
+        <p className="text-slate-500 mb-6">Liên kết này có thể không hợp lệ hoặc dữ liệu không tồn tại trên thiết bị hiện tại.</p>
+        <button onClick={() => navigate("/")} className="px-6 py-2.5 bg-slate-100 text-slate-700 font-medium rounded-xl hover:bg-slate-200 transition-colors">Quay lại trang chủ</button>
+      </div>
+    </div>
+  );
   if (!version.questions || version.questions.length === 0) return (
     <div className="p-8 text-center bg-white rounded-xl shadow-sm max-w-md mx-auto mt-12">
       <h2 className="text-xl font-bold text-slate-800 mb-2">Không có câu hỏi</h2>

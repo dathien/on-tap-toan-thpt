@@ -39,6 +39,32 @@ function ommlToLatex(ommlNode: Element): string {
             const sub = el.querySelector('sub');
             const sup = el.querySelector('sup');
             latex += `${e ? ommlToLatex(e) : ''}_{${sub ? ommlToLatex(sub) : ''}}^{${sup ? ommlToLatex(sup) : ''}}`;
+        } else if (tag === 'd') {
+            const dPr = el.querySelector('dPr');
+            let begCh = '(';
+            let endCh = ')';
+            let sepCh = '|';
+            if (dPr) {
+                const b = dPr.querySelector('begCh');
+                if (b) begCh = b.getAttribute('m:val') || b.getAttribute('val') || begCh;
+                const e = dPr.querySelector('endCh');
+                if (e) endCh = e.getAttribute('m:val') || e.getAttribute('val') || endCh;
+                const s = dPr.querySelector('sepCh');
+                if (s) sepCh = s.getAttribute('m:val') || s.getAttribute('val') || sepCh;
+            }
+            const eNodes = Array.from(el.childNodes).filter(n => n.nodeType === 1 && (n as Element).localName === 'e');
+            let innerLatex = '';
+            for (let i = 0; i < eNodes.length; i++) {
+                innerLatex += ommlToLatex(eNodes[i] as Element);
+                if (i < eNodes.length - 1) innerLatex += sepCh;
+            }
+            let lBeg = begCh;
+            let lEnd = endCh;
+            if (lBeg === '{' || lBeg === '}') lBeg = '\\' + lBeg;
+            if (lEnd === '{' || lEnd === '}') lEnd = '\\' + lEnd;
+            if (lBeg === '') lBeg = '.';
+            if (lEnd === '') lEnd = '.';
+            latex += `\\left${lBeg}${innerLatex}\\right${lEnd}`;
         } else if (tag === 'r') {
             const t = el.querySelector('t');
             if (t && t.textContent) {

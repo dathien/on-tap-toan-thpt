@@ -11,6 +11,7 @@ export function MathRenderer({ value, displayMode = false, className = '' }: { v
       return katex.renderToString(normalized, {
         displayMode,
         throwOnError: false,
+        errorColor: "inherit",
       });
     } catch (e) {
       console.error("KaTeX error:", e);

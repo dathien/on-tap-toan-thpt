@@ -1,0 +1,1 @@
+sed -i 's~const \[currentIndex, setCurrentIndex\] = useState(0);~const [isReady, setIsReady] = useState(false);\n  useEffect(() => {\n    const timer = setTimeout(() => setIsReady(true), 100);\n    return () => clearTimeout(timer);\n  }, []);\n\n  const [currentIndex, setCurrentIndex] = useState(0);~g' src/pages/StudentExam.tsx
