@@ -16,46 +16,181 @@ export interface Topic {
 export const curriculumData: Record<number, Topic[]> = {
   "10": [
     {
-      "id": "c1",
-      "name": "Mệnh đề và tập hợp",
-      "lessons": [
-        {
-          "id": "l1",
-          "name": "Mệnh đề",
-          "semester": "NEEDS_CURRICULUM_MAPPING"
-        },
-        {
-          "id": "l2",
-          "name": "Tập hợp",
-          "semester": "NEEDS_CURRICULUM_MAPPING"
-        },
-        {
-          "id": "l3",
-          "name": "Các phép toán trên tập hợp",
-          "semester": "NEEDS_CURRICULUM_MAPPING"
-        }
-      ],
-      "semester": "NEEDS_CURRICULUM_MAPPING"
+        "id": "c1",
+        "name": "Mệnh đề và tập hợp",
+        "lessons": [
+            {
+                "id": "l10_1",
+                "name": "Mệnh đề",
+                "semester": 1
+            },
+            {
+                "id": "l10_2",
+                "name": "Tập hợp",
+                "semester": 1
+            },
+            {
+                "id": "l10_3",
+                "name": "Các phép toán trên tập hợp",
+                "semester": 1
+            }
+        ],
+        "semester": 1
     },
     {
-      "id": "c2",
-      "name": "Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
-      "lessons": [
-        {
-          "id": "l4",
-          "name": "Bất phương trình bậc nhất hai ẩn",
-          "semester": "NEEDS_CURRICULUM_MAPPING"
-        },
-        {
-          "id": "l5",
-          "name": "Hệ bất phương trình bậc nhất hai ẩn",
-          "semester": "NEEDS_CURRICULUM_MAPPING"
-        }
-      ],
-      "semester": "NEEDS_CURRICULUM_MAPPING"
+        "id": "c2",
+        "name": "Bất phương trình và hệ bất phương trình bậc nhất hai ẩn",
+        "lessons": [
+            {
+                "id": "l10_4",
+                "name": "Bất phương trình bậc nhất hai ẩn",
+                "semester": 1
+            },
+            {
+                "id": "l10_5",
+                "name": "Hệ bất phương trình bậc nhất hai ẩn",
+                "semester": 1
+            }
+        ],
+        "semester": 1
+    },
+    {
+        "id": "c3",
+        "name": "Hàm số và đồ thị",
+        "lessons": [
+            {
+                "id": "l10_6",
+                "name": "Hàm số",
+                "semester": 1
+            },
+            {
+                "id": "l10_7",
+                "name": "Hàm số bậc hai",
+                "semester": 1
+            },
+            {
+                "id": "l10_8",
+                "name": "Đồ thị hàm số bậc hai",
+                "semester": 1
+            }
+        ],
+        "semester": 1
+    },
+    {
+        "id": "c4",
+        "name": "Hệ thức lượng trong tam giác",
+        "lessons": [
+            {
+                "id": "l10_9",
+                "name": "Giá trị lượng giác của một góc từ 0° đến 180°",
+                "semester": 1
+            },
+            {
+                "id": "l10_10",
+                "name": "Định lí côsin và định lí sin",
+                "semester": 1
+            },
+            {
+                "id": "l10_11",
+                "name": "Giải tam giác và ứng dụng thực tế",
+                "semester": 1
+            }
+        ],
+        "semester": 1
+    },
+    {
+        "id": "c5",
+        "name": "Vectơ",
+        "lessons": [
+            {
+                "id": "l10_12",
+                "name": "Khái niệm vectơ",
+                "semester": 1
+            },
+            {
+                "id": "l10_13",
+                "name": "Tổng và hiệu của hai vectơ",
+                "semester": 1
+            },
+            {
+                "id": "l10_14",
+                "name": "Tích của một vectơ với một số",
+                "semester": 1
+            },
+            {
+                "id": "l10_15",
+                "name": "Tích vô hướng của hai vectơ",
+                "semester": 1
+            }
+        ],
+        "semester": 1
+    },
+    {
+        "id": "c6",
+        "name": "Thống kê",
+        "lessons": [
+            {
+                "id": "l10_16",
+                "name": "Số gần đúng. Sai số",
+                "semester": 1
+            },
+            {
+                "id": "l10_17",
+                "name": "Các số đặc trưng đo xu thế trung tâm",
+                "semester": 1
+            },
+            {
+                "id": "l10_18",
+                "name": "Các số đặc trưng đo mức độ phân tán",
+                "semester": 1
+            }
+        ],
+        "semester": 1
+    },
+    {
+        "id": "c7",
+        "name": "Xác suất",
+        "lessons": [
+            {
+                "id": "l10_19",
+                "name": "Biến cố",
+                "semester": 2
+            },
+            {
+                "id": "l10_20",
+                "name": "Xác suất",
+                "semester": 2
+            }
+        ],
+        "semester": 2
     }
-  ],
+],
   "11": [
+    {
+      "id": "c11_limit",
+      "name": "Giới hạn",
+      "semester": 1,
+      "lessons": [
+        { "id": "l11_limit1", "name": "Giới hạn của dãy số", "semester": 1 },
+        { "id": "l11_limit2", "name": "Giới hạn hàm số", "semester": 1 }
+      ]
+    },
+    {
+      "id": "c11_deriv",
+      "name": "Đạo hàm",
+      "semester": 2,
+      "lessons": [
+        { "id": "l11_deriv1", "name": "Đạo hàm", "semester": 2 }
+      ]
+    },
+    {
+      "id": "c11_space",
+      "name": "Hình học không gian",
+      "semester": 2,
+      "lessons": [
+        { "id": "l11_space1", "name": "Quan hệ vuông góc", "semester": 2 }
+      ]
+    },
     {
       "id": "c3",
       "name": "Hàm số lượng giác và phương trình lượng giác",

@@ -1,11 +1,27 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/types/index.ts', 'utf8');
 
-if (!code.includes('topicIds?: string[];')) {
-    code = code.replace(
-        "grade: Grade;\n}",
-        "grade: Grade;\n  scopeType?: 'LESSON' | 'TOPIC' | 'MULTI_TOPIC';\n  topicIds?: string[];\n  lessonIds?: string[];\n}"
-    );
-    fs.writeFileSync('src/types/index.ts', code);
-    console.log("Patched types");
+const typesPath = 'src/types/index.ts';
+let content = fs.readFileSync(typesPath, 'utf8');
+
+const newType = `
+export interface GameResult {
+  id: string;
+  activityType: 'GAME';
+  gameType: 'TREASURE';
+  gradeId: number;
+  topicId: string;
+  lessonId: string;
+  score: number;
+  correctCount: number;
+  wrongCount: number;
+  accuracy: number;
+  xp: number;
+  duration: number;
+  playedAt: number;
+}
+`;
+
+if (!content.includes('export interface GameResult')) {
+  content += newType;
+  fs.writeFileSync(typesPath, content);
 }

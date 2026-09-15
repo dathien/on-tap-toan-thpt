@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+const fs = require('fs');
+
+const fileContent = `import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { getQuestions as fetchQuestions, shuffleArray } from '../utils/questionSelector';
@@ -11,7 +13,13 @@ import { Question, GameResult } from '../types';
 import clsx from 'clsx';
 import { curriculumData } from '../data/curriculum';
 
-
+const LEVELS = [
+  { id: 1, name: 'Khởi hành', icon: Compass, desc: 'Khởi động nhẹ để lấy nhịp!' },
+  { id: 2, name: 'Giải mã', icon: Search, desc: 'Đọc dữ kiện – tìm chìa khóa.' },
+  { id: 3, name: 'Tăng tốc', icon: Zap, desc: 'Tăng tốc! Vận dụng kiến thức để tiến lên.' },
+  { id: 4, name: 'Chinh phục', icon: Trophy, desc: 'Chỉ còn một chặng trước Trùm cuối!' },
+  { id: 5, name: 'Trùm cuối', icon: Crown, desc: 'Chỉ còn một chặng nữa để mở Kho báu tri thức.' },
+];
 
 export function TreasureHunt() {
   const { currentGrade, questions, addGameResult } = useAppStore();
@@ -22,11 +30,10 @@ export function TreasureHunt() {
   
   // Config state
   const [cfgGrade, setCfgGrade] = useState<number>(currentGrade || 10);
-  const [cfgTopic, setCfgTopic] = useState<string>('ALL');
-  const [cfgLesson, setCfgLesson] = useState<string>('ALL');
+  const [cfgTopic, setCfgTopic] = useState<string>('');
+  const [cfgLesson, setCfgLesson] = useState<string>('');
   const [cfgDiff, setCfgDiff] = useState<string>('ALL');
   const [cfgCount, setCfgCount] = useState<number>(10);
-  const [configWarning, setConfigWarning] = useState<{ message: string; type: 'alert' | 'confirm'; onConfirm?: () => void } | null>(null);
   
   const [gameQuestions, setGameQuestions] = useState<Question[]>([]);
   const [levelDistribution, setLevelDistribution] = useState<number[]>([0,0,0,0,0]);
@@ -44,19 +51,18 @@ export function TreasureHunt() {
   // Update topics when grade changes
   const topics = useMemo(() => curriculumData[cfgGrade] || [], [cfgGrade]);
   useEffect(() => {
-    if (cfgTopic !== 'ALL' && !topics.find(t => t.id === cfgTopic)) {
-      setCfgTopic('ALL');
+    if (!topics.find(t => t.id === cfgTopic)) {
+      setCfgTopic(topics.length > 0 ? topics[0].id : '');
     }
   }, [topics, cfgTopic]);
 
   const lessons = useMemo(() => {
-    if (cfgTopic === 'ALL') return [];
     const t = topics.find(t => t.id === cfgTopic);
     return t ? t.lessons : [];
   }, [topics, cfgTopic]);
   useEffect(() => {
-    if (cfgLesson !== 'ALL' && !lessons.find(l => l.id === cfgLesson)) {
-      setCfgLesson('ALL');
+    if (!lessons.find(l => l.id === cfgLesson)) {
+      setCfgLesson(lessons.length > 0 ? lessons[0].id : '');
     }
   }, [lessons, cfgLesson]);
 
@@ -108,38 +114,27 @@ export function TreasureHunt() {
     setGameState('MAP');
   };
 
-  const handleStartConfig = () => { 
+  const handleStartConfig = () => {
     // 1. Fetch
     let diffFilter: any = undefined;
     if (cfgDiff !== 'ALL') diffFilter = parseInt(cfgDiff);
 
     let gradeQuestions = fetchQuestions(questions, {
       gradeId: cfgGrade,
-      topicId: cfgTopic === 'ALL' ? undefined : cfgTopic,
-      lessonId: cfgLesson === 'ALL' ? undefined : cfgLesson,
+      topicId: cfgTopic,
+      lessonId: cfgLesson,
       difficulty: diffFilter,
       questionTypes: ['MCQ_SINGLE']
     });
 
     if (gradeQuestions.length === 0) {
-      setConfigWarning({
-        type: 'alert',
-        message: 'Chưa có câu hỏi phù hợp với lựa chọn này. Vui lòng chọn bài khác.'
-      });
+      alert("Ngân hàng chưa có câu hỏi phù hợp với lựa chọn này. Vui lòng chọn bài khác.");
       return;
     }
 
     if (gradeQuestions.length < cfgCount) {
-      setConfigWarning({
-        type: 'confirm',
-        message: `Ngân hàng hiện có ${gradeQuestions.length}/${cfgCount} câu phù hợp.\nBạn có muốn dùng ${gradeQuestions.length} câu này không?`,
-        onConfirm: () => {
-          setConfigWarning(null);
-          const finalQs = gradeQuestions.slice(0, cfgCount);
-          startGame(finalQs.length, finalQs);
-        }
-      });
-      return;
+      const confirm = window.confirm(\`Ngân hàng hiện có \${gradeQuestions.length}/\${cfgCount} câu phù hợp.\\n\\nNhấn OK để DÙNG \${gradeQuestions.length} CÂU.\\nNhấn Cancel để ĐỔI BÀI HỌC.\`);
+      if (!confirm) return;
     }
     
     // Slice to count
@@ -271,29 +266,6 @@ export function TreasureHunt() {
     setGameState('TREASURE');
   };
 
-
-  const dynamicLevels = useMemo(() => {
-    let bossName = 'Trùm cuối';
-    if (cfgGrade === 10) {
-       if (cfgTopic === 'c5') bossName = 'Người Gác Cổng Vectơ';
-       else if (cfgTopic === 'c3') bossName = 'Kẻ Thống Trị Parabol';
-    } else if (cfgGrade === 11) {
-       if (cfgTopic === 'c11_limit') bossName = 'Kẻ Canh Giữ Vô Cực';
-       else if (cfgTopic === 'c11_deriv') bossName = 'Bậc Thầy Biến Thiên';
-    } else if (cfgGrade === 12) {
-       if (cfgTopic === 'c5') bossName = 'Chúa Tể Hàm Số';
-       else if (cfgTopic === 'c6') bossName = 'Hắc Kị Sĩ Oxyz';
-    }
-    
-    return [
-      { id: 1, name: 'Khởi hành', icon: Compass, desc: 'Khởi động nhẹ để lấy nhịp!' },
-      { id: 2, name: 'Giải mã', icon: Search, desc: 'Đọc dữ kiện – tìm chìa khóa.' },
-      { id: 3, name: 'Tăng tốc', icon: Zap, desc: 'Tăng tốc! Vận dụng kiến thức để tiến lên.' },
-      { id: 4, name: 'Chinh phục', icon: Trophy, desc: 'Chỉ còn một chặng trước Trùm cuối!' },
-      { id: 5, name: bossName, icon: Crown, desc: 'Chỉ còn một chặng nữa để mở Kho báu tri thức.' }
-    ];
-  }, [cfgGrade, cfgTopic]);
-  
   const getTitle = () => {
     if (currentLevel < 2) return 'Tân binh';
     if (currentLevel < 3) return 'Nhà khám phá';
@@ -305,31 +277,7 @@ export function TreasureHunt() {
 
   if (gameState === 'CONFIG') {
     return (
-      <div className="max-w-3xl mx-auto py-12 relative">
-        {configWarning && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-3xl">
-            <div className="bg-white p-6 rounded-2xl shadow-xl border border-slate-200 max-w-md w-full text-center">
-              <AlertTriangle className="text-amber-500 mx-auto mb-4" size={48} />
-              <p className="text-slate-800 font-medium whitespace-pre-line mb-6 text-lg">{configWarning.message}</p>
-              <div className="flex justify-center gap-4">
-                <button
-                  onClick={() => setConfigWarning(null)}
-                  className="px-6 py-2.5 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
-                >
-                  {configWarning.type === 'confirm' ? 'Đổi bài học' : 'Đã hiểu'}
-                </button>
-                {configWarning.type === 'confirm' && (
-                  <button
-                    onClick={configWarning.onConfirm}
-                    className="px-6 py-2.5 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
-                  >
-                    Tiếp tục chơi
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+      <div className="max-w-3xl mx-auto py-12">
         <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-slate-800 flex items-center justify-center gap-3">
@@ -361,7 +309,6 @@ export function TreasureHunt() {
                   value={cfgTopic}
                   onChange={(e) => setCfgTopic(e.target.value)}
                 >
-                  <option value="ALL">Tất cả chủ đề</option>
                   {topics.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
@@ -373,9 +320,7 @@ export function TreasureHunt() {
                 className="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 focus:border-indigo-500 outline-none"
                 value={cfgLesson}
                 onChange={(e) => setCfgLesson(e.target.value)}
-                disabled={cfgTopic === 'ALL'}
               >
-                <option value="ALL">Tất cả bài học</option>
                 {lessons.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
               </select>
             </div>
@@ -443,7 +388,7 @@ export function TreasureHunt() {
           <div className="absolute top-8 bottom-8 left-8 w-1 bg-slate-200 z-0"></div>
           
           <div className="space-y-8 relative z-10">
-            {dynamicLevels.map((level) => {
+            {LEVELS.map((level) => {
               const isActive = currentLevel === level.id;
               const isCompleted = currentLevel > level.id;
               const isLocked = currentLevel < level.id;
@@ -515,7 +460,7 @@ export function TreasureHunt() {
     const q = levelQuestions[currentQIndex];
     if (!q) return <div className="p-8 text-center bg-white rounded-xl shadow-sm max-w-md mx-auto mt-12">Lỗi tải câu hỏi.</div>;
     const isBoss = currentLevel === 5;
-    const currentLvlConfig = dynamicLevels.find(l => l.id === currentLevel);
+    const currentLvlConfig = LEVELS.find(l => l.id === currentLevel);
 
     return (
       <div className="max-w-4xl mx-auto py-8">
@@ -540,7 +485,7 @@ export function TreasureHunt() {
           <div className="absolute top-0 left-0 right-0 h-2 bg-slate-100">
             <div 
               className={clsx("h-full transition-all duration-500", isBoss ? "bg-amber-500" : "bg-indigo-500")}
-              style={{ width: `${((currentQIndex) / levelQuestions.length) * 100}%` }}
+              style={{ width: \`\${((currentQIndex) / levelQuestions.length) * 100}%\` }}
             ></div>
           </div>
           
@@ -793,3 +738,5 @@ export function TreasureHunt() {
 
   return null;
 }
+`;
+fs.writeFileSync('src/pages/TreasureHunt.tsx', fileContent);

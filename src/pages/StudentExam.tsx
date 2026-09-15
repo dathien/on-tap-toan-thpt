@@ -279,6 +279,7 @@ export function StudentExam() {
   );
 
   const currentQuestion = version.questions[currentIndex];
+  if (!currentQuestion) return <div className="p-8 text-center bg-white rounded-xl shadow-sm max-w-md mx-auto mt-12">Lỗi tải câu hỏi.</div>;
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);

@@ -42,22 +42,25 @@ export default function App() {
     let migrated = false;
     
     const cleanQ = (q: any) => {
-      const sanitized = sanitizeQuestionText(q.content);
+      if (!q) return q;
+      const sanitized = sanitizeQuestionText(q.content || '');
       if (sanitized !== q.content) {
         return { ...q, content: sanitized };
       }
       return q;
     };
 
-    const newQuestions = store.questions.map(cleanQ);
-    if (newQuestions.some((q, i) => q !== store.questions[i])) {
+    const newQuestions = store.questions.filter(Boolean).map(cleanQ);
+    if (newQuestions.length !== store.questions.length || newQuestions.some((q, i) => q !== store.questions[i])) {
       useAppStore.setState({ questions: newQuestions });
       migrated = true;
     }
 
     const newVersions = store.examVersions.map(ev => {
       let changed = false;
-      const nq = ev.questions.map(q => {
+      const validQuestions = ev.questions.filter(Boolean);
+      if (validQuestions.length !== ev.questions.length) changed = true;
+      const nq = validQuestions.map(q => {
         const c = cleanQ(q);
         if (c !== q) changed = true;
         return c;

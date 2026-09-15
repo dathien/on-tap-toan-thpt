@@ -34,7 +34,7 @@ export const demoQuestions: Question[] = [
         }
       }
     },
-    options: [
+      options: [
       { id: `o1`, content: `Hàm số đồng biến trên khoảng $(0; 2)$`, isCorrect: false },
       { id: `o2`, content: `Hàm số nghịch biến trên khoảng $(0; 1)$`, isCorrect: true },
       { id: `o3`, content: `Hàm số đạt cực đại tại $x = 2$`, isCorrect: false },
@@ -74,7 +74,7 @@ export const demoQuestions: Question[] = [
         }
       }
     },
-    options: [
+      options: [
       { id: `o1`, content: `Đồ thị hàm số có tiệm cận đứng $x = 1$, tiệm cận ngang $y = 2$`, isCorrect: true },
       { id: `o2`, content: `Đồ thị hàm số có tiệm cận đứng $x = 2$, tiệm cận ngang $y = 1$`, isCorrect: false },
       { id: `o3`, content: `Hàm số luôn đồng biến trên $\\mathbb{R}$`, isCorrect: false },
@@ -104,7 +104,7 @@ export const demoQuestions: Question[] = [
         ]
       }
     },
-    options: [
+      options: [
       { id: `o1`, content: `$y = x^3 - 3x$`, isCorrect: true },
       { id: `o2`, content: `$y = -x^3 + 3x$`, isCorrect: false },
       { id: `o3`, content: `$y = x^4 - 2x^2$`, isCorrect: false },
@@ -145,7 +145,7 @@ export const demoQuestions: Question[] = [
         ]
       }
     },
-    options: [
+      options: [
       { id: `o1`, content: `$(x - 1)^2 + (y + 2)^2 + (z - 3)^2 = 25$`, isCorrect: true },
       { id: `o2`, content: `$(x + 1)^2 + (y - 2)^2 + (z + 3)^2 = 25$`, isCorrect: false },
       { id: `o3`, content: `$(x - 1)^2 + (y + 2)^2 + (z - 3)^2 = 5$`, isCorrect: false },
@@ -236,7 +236,8 @@ export const demoQuestions: Question[] = [
       question_type: 'MCQ_SINGLE' as const,
       difficulty: 1 as const,
       content: `Tính đạo hàm của hàm số $y = ${item.fn}$.`,
-      options: [
+   
+        options: [
         { id: 'o1', content: `$${item.ans}$`, isCorrect: true },
         { id: 'o2', content: `$${item.fake1}$`, isCorrect: false },
         { id: 'o3', content: `$${item.fake2}$`, isCorrect: false },
@@ -282,5 +283,101 @@ export const demoQuestions: Question[] = [
       content: `Giải phương trình $${item.eq}$.`,
       correctAnswer: item.ans,
       tags: ['phuong-trinh'],
-  }))
+  })),
+
+// GRADE 10 - Hàm số bậc hai
+...Array.from({ length: 5 }).map((_, i) => ({
+  id: `g10-hsbh-${i}`,
+  subject_id: 'math',
+  grade_id: 10 as const,
+  topic_id: 'c3',
+  lesson_id: 'l10_7',
+  question_type: 'MCQ_SINGLE' as const,
+  difficulty: ((i % 4) + 1) as 1|2|3|4,
+  tags: [],
+  content: `Cho hàm số $y = ${i+1}x^2 - 4x + 1$. Tọa độ đỉnh của đồ thị hàm số là:`,
+   
+    options: [
+    { id: 'A', content: `$(2/${i+1}; ${1 - 4/(i+1)})`, isCorrect: true },
+    { id: 'B', content: `$(-2/${i+1}; 1)`, isCorrect: false },
+    { id: 'C', content: `$(1; ${i-2})`, isCorrect: false },
+    { id: 'D', content: `$(0; 1)`, isCorrect: false },
+  ]
+})),
+// GRADE 10 - Vectơ
+...Array.from({ length: 5 }).map((_, i) => ({
+  id: `g10-vec-${i}`,
+  subject_id: 'math',
+  grade_id: 10 as const,
+  topic_id: 'c5',
+  lesson_id: 'l10_15',
+  question_type: 'MCQ_SINGLE' as const,
+  difficulty: ((i % 4) + 1) as 1|2|3|4,
+  tags: [],
+  content: `Cho hai vectơ $\\vec{a}, \\vec{b}$ có $|\\vec{a}| = 2$, $|\\vec{b}| = ${i+3}$, góc giữa chúng là $60^\\circ$. Tính $\\vec{a} \\cdot \\vec{b}$.`,
+   
+    options: [
+    { id: 'A', content: `${i+3}`, isCorrect: true },
+    { id: 'B', content: `${(i+3)*2}`, isCorrect: false },
+    { id: 'C', content: `${(i+3)/2}`, isCorrect: false },
+    { id: 'D', content: `0`, isCorrect: false },
+  ]
+})),
+// GRADE 11 - Giới hạn
+...Array.from({ length: 5 }).map((_, i) => ({
+  id: `g11-lim-${i}`,
+  subject_id: 'math',
+  grade_id: 11 as const,
+  topic_id: 'c11_limit',
+  lesson_id: 'l11_limit2',
+  question_type: 'MCQ_SINGLE' as const,
+  difficulty: ((i % 4) + 1) as 1|2|3|4,
+  tags: [],
+  content: `Tính giới hạn $\\lim_{x \\to ${i}} \\frac{x^2 - ${i*i}}{x - ${i}}$.`,
+   
+    options: [
+    { id: 'A', content: `${i*2}`, isCorrect: true },
+    { id: 'B', content: `${i}`, isCorrect: false },
+    { id: 'C', content: `0`, isCorrect: false },
+    { id: 'D', content: `+\\infty`, isCorrect: false },
+  ]
+})),
+// GRADE 11 - Đạo hàm
+...Array.from({ length: 5 }).map((_, i) => ({
+  id: `g11-der-${i}`,
+  subject_id: 'math',
+  grade_id: 11 as const,
+  topic_id: 'c11_deriv',
+  lesson_id: 'l11_deriv1',
+  question_type: 'MCQ_SINGLE' as const,
+  difficulty: ((i % 4) + 1) as 1|2|3|4,
+  tags: [],
+  content: `Đạo hàm của hàm số $y = ${i+1}x^3 - 2x$ là:`,
+   
+    options: [
+    { id: 'A', content: `$y' = ${(i+1)*3}x^2 - 2$`, isCorrect: true },
+    { id: 'B', content: `$y' = ${i+1}x^2 - 2$`, isCorrect: false },
+    { id: 'C', content: `$y' = ${(i+1)*3}x^2$`, isCorrect: false },
+    { id: 'D', content: `$y' = 3x^2 - 2$`, isCorrect: false },
+  ]
+})),
+// GRADE 11 - Hình học không gian
+...Array.from({ length: 5 }).map((_, i) => ({
+  id: `g11-spc-${i}`,
+  subject_id: 'math',
+  grade_id: 11 as const,
+  topic_id: 'c11_space',
+  lesson_id: 'l11_space1',
+  question_type: 'MCQ_SINGLE' as const,
+  difficulty: ((i % 4) + 1) as 1|2|3|4,
+  tags: [],
+  content: `Cho hình chóp S.ABCD có đáy là hình vuông, $SA \\perp (ABCD)$. Mệnh đề nào sai?`,
+   
+    options: [
+    { id: 'A', content: `$BD \\perp (SAC)$`, isCorrect: false },
+    { id: 'B', content: `$BC \\perp (SAB)$`, isCorrect: false },
+    { id: 'C', content: `$CD \\perp (SAD)$`, isCorrect: false },
+    { id: 'D', content: `$AC \\perp (SBD)$`, isCorrect: true }, // Not necessarily true if ABCD is rectangle, but ABCD is square, so AC perp BD. But SA perp BD, so BD perp (SAC), so BD perp AC. Wait, D says AC perp (SBD). AC perp BD, but does AC perp SB or SD? No. So D is false.
+  ]
+})),
 ];

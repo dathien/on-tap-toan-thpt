@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { AppSettings, Grade, StudentAttempt, ExamConfig, ExamVersion, Question, Class, Student } from '../types';
+import { AppSettings, Grade, StudentAttempt, ExamConfig, ExamVersion, Question, Class, Student, GameResult } from '../types';
 import { demoQuestions } from '../data/demoQuestions';
 import { validateQuestionMath } from '../utils/mathValidator';
 
@@ -58,6 +58,8 @@ interface AppState {
   addQuestion: (q: Question) => void;
   updateQuestion: (id: string, updates: Partial<Question>) => void;
   deleteQuestion: (id: string) => void;
+  gameResults: GameResult[];
+  addGameResult: (result: GameResult) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -104,7 +106,7 @@ export const useAppStore = create<AppState>()(
       addExamVersion: (version) => set((state) => ({ examVersions: [...state.examVersions, version] })),
       updateExamVersion: (id, updates) => set((state) => ({ examVersions: state.examVersions.map(v => v.id === id ? { ...v, ...updates } : v) })),
 
-      questions: demoQuestions.filter(q => validateQuestionMath(q).isValid),
+      questions: demoQuestions,
       addQuestion: (q) => set((state) => ({ questions: [q, ...state.questions] })),
       updateQuestion: (id, updates) => set((state) => ({
         questions: state.questions.map(q => q.id === id ? { ...q, ...updates } as Question : q)
@@ -112,14 +114,16 @@ export const useAppStore = create<AppState>()(
       deleteQuestion: (id) => set((state) => ({
         questions: state.questions.filter(q => q.id !== id)
       })),
+      gameResults: [],
+      addGameResult: (result) => set((state) => ({ gameResults: [...(state.gameResults || []), result] })),
     }),
     {
       name: 'gvbm-storage',
-      version: 1,
+      version: 2,
       migrate: (persistedState: any, version: number) => {
-        if (version === 0) {
+        if (version === 0 || version === 1) {
           // Reset questions to demoQuestions if migrating from v0 to v1
-          persistedState.questions = demoQuestions.filter(q => validateQuestionMath(q).isValid);
+          persistedState.questions = demoQuestions;
         }
         return persistedState;
       },

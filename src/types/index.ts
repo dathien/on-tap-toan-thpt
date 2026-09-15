@@ -150,3 +150,19 @@ export interface LearningSession {
   teacherOverride?: boolean;
   questions?: any[];
 }
+
+export interface GameResult {
+  id: string;
+  activityType: 'GAME';
+  gameType: 'TREASURE';
+  gradeId: number;
+  topicId: string;
+  lessonId: string;
+  score: number;
+  correctCount: number;
+  wrongCount: number;
+  accuracy: number;
+  xp: number;
+  duration: number;
+  playedAt: number;
+}
