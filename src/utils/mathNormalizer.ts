@@ -1,6 +1,10 @@
 export function normalizeMathExpression(value: string | undefined | null): string {
   if (value === undefined || value === null) return "";
   let v = String(value).trim();
+
+  // Strip zero-width spaces and control characters (except newline/tab)
+  v = v.replace(/[\u200B-\u200D\uFEFF\u200E\u200F]/g, '');
+
   
   // Replace missing backslashes or unicode math symbols
   v = v.replace(/∞/g, "\\infty");
@@ -48,7 +52,7 @@ export function normalizeMathExpression(value: string | undefined | null): strin
   });
   
   // Clean up trailing artifacts like specific question 9 issue
-  v = v.replace(/y_CT=0\)$/, "y_{CT}=0)"); // Just in case
+  v = v.replace(/y_CT=0/g, "y_{CT}=0"); // Just in case
   
   return v;
 

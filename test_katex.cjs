@@ -1,4 +1,4 @@
 const katex = require('katex');
-console.log("1:", katex.renderToString("D=R\\{1\\}", { throwOnError: false }));
-console.log("2:", katex.renderToString("D=R\\\\{1}", { throwOnError: false }));
-console.log("3:", katex.renderToString("D=R\\backslash\\{1\\}", { throwOnError: false }));
+try {
+  console.log("TEST 1:", katex.renderToString("f'(x)=0\\Leftrightarrow{}x^2-4=0\\Leftrightarrow{}x=-2"));
+} catch (e) { console.error("ERR 1:", e.message); }
