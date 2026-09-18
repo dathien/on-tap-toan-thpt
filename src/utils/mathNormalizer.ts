@@ -47,7 +47,7 @@ export function normalizeMathExpression(value: string | undefined | null): strin
     "mathrm"
   ];
   COMMANDS_REQUIRING_BOUNDARY.forEach(cmd => {
-    const regex = new RegExp(`(\\\\${cmd})([a-zA-Z0-9])`, 'g');
+    const regex = new RegExp(`(\\\\${cmd})([a-zA-Z0-9])(?![a-zA-Z])`, 'g');
     v = v.replace(regex, "$1{}$2");
   });
   

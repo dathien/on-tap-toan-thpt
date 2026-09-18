@@ -1,2 +1,2 @@
 import { normalizeMathExpression } from './src/utils/mathNormalizer.ts';
-console.log("infty:", normalizeMathExpression("\\infty"));
+console.log(normalizeMathExpression("\\sin\\left( x\\right)"));
