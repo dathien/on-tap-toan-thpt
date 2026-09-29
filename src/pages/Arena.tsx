@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
-import { Crown, Shield, Swords, Users, Trophy, Zap, LockKeyhole, Medal, Flag, Route, ChevronRight, Sparkles, RotateCcw } from 'lucide-react';
+import { Crown, Shield, Swords, Users, Trophy, Zap, LockKeyhole, Medal, Flag, Route, ChevronRight, Sparkles, RotateCcw, Ticket, History, Target, CheckCircle2, XCircle, Settings2 } from 'lucide-react';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
@@ -35,7 +35,16 @@ const modes = [
 
 export function Arena() {
   const [players, setPlayers] = useState(initialPlayers);
-  const [active, setActive] = useState<'overview'|'ranking'|'demo'|'teacher'>('overview');
+  const [active, setActive] = useState<'overview'|'challenge'|'ranking'|'demo'|'teacher'>('overview');
+  const [challenger, setChallenger] = useState('p6');
+  const [opponent, setOpponent] = useState('p4');
+  const [challengeType, setChallengeType] = useState('Đại Thách Đấu');
+  const [tickets, setTickets] = useState(3);
+  const [notice, setNotice] = useState('');
+  const [history, setHistory] = useState([
+    {id:'m1', a:'Lan', b:'Hùng', result:'Lan thắng', mode:'1vs1', delta:'+10', time:'Hôm nay • 09:15'},
+    {id:'m2', a:'Nam', b:'Phúc', result:'Phúc thắng', mode:'1vs1', delta:'+10', time:'Hôm qua • 14:20'},
+  ]);
   const [demoDone, setDemoDone] = useState(false);
   const sorted = useMemo(() => [...players].sort((a,b) => b.arena-a.arena), [players]);
 
@@ -73,12 +82,12 @@ export function Arena() {
     </section>
 
     <div className="flex gap-2 overflow-x-auto pb-1">
-      {([['overview','Tổng quan'],['ranking','Xếp hạng'],['demo','Mô phỏng luật'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
+      {([['overview','Tổng quan'],['challenge','Thách đấu'],['ranking','Xếp hạng'],['demo','Mô phỏng luật'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
     </div>
 
     {active==='overview' && <>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {modes.map((m,i)=><motion.button key={m.title} initial={{opacity:0,y:14}} animate={{opacity:1,y:0}} transition={{delay:i*.05}} onClick={()=>setActive(i===1?'demo':'ranking')} className="text-left bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition">
+        {modes.map((m,i)=><motion.button key={m.title} initial={{opacity:0,y:14}} animate={{opacity:1,y:0}} transition={{delay:i*.05}} onClick={()=>setActive(i<=4?'challenge':'ranking')} className="text-left bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:-translate-y-1 hover:shadow-md transition">
           <div className="flex justify-between items-start"><div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><m.icon size={25}/></div><span className="text-xs font-black px-2.5 py-1 rounded-full bg-slate-100 text-slate-500">{m.tag}</span></div>
           <h3 className="font-black text-slate-900 text-lg mt-4">{m.title}</h3><p className="text-slate-500 mt-2 leading-6">{m.desc}</p>
           <div className="mt-4 text-indigo-600 font-bold flex items-center gap-1">Mở khu vực <ChevronRight size={17}/></div>
@@ -90,6 +99,31 @@ export function Arena() {
         <div className="bg-white rounded-2xl border p-5"><div className="font-black text-slate-800">🔥 Cơ hội vượt cấp</div><p className="text-sm text-slate-500 mt-2">Top cấp dưới có thể mở Vé Đại Thách Đấu để thử sức Top cấp trên.</p></div>
       </div>
     </>}
+
+
+    {active==='challenge' && <div className="grid xl:grid-cols-[1.1fr_.9fr] gap-5">
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div><h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><Swords className="text-indigo-600"/> Tạo thách đấu</h2><p className="text-sm text-slate-500 mt-1">Bản mô phỏng chức năng trước khi nối Apps Script + Google Sheets.</p></div>
+          <div className="px-3 py-2 rounded-xl bg-amber-50 text-amber-700 font-black text-sm flex items-center gap-2"><Ticket size={17}/> {tickets} vé</div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-4 mt-6">
+          <label className="text-sm font-bold text-slate-700">Người thách đấu<select value={challenger} onChange={e=>setChallenger(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">{players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}</select></label>
+          <label className="text-sm font-bold text-slate-700">Đối thủ<select value={opponent} onChange={e=>setOpponent(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">{players.filter(p=>p.id!==challenger).map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}</select></label>
+          <label className="text-sm font-bold text-slate-700 md:col-span-2">Loại trận<select value={challengeType} onChange={e=>setChallengeType(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3"><option>1vs1 cùng cấp</option><option>Đại Thách Đấu</option><option>Thách Ban cán sự</option><option>Phá ải Guardian</option><option>Tranh ngôi Champion</option></select></label>
+        </div>
+        <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600"><b className="text-slate-900">Kiểm tra luật:</b> hệ thống sẽ xác thực vé, khoảng cách hạng, trạng thái bảo hộ, đối thủ bận và điều kiện vượt cấp. Điểm chỉ được chốt bởi server khi nối backend.</div>
+        <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} if(challenger===opponent){setNotice('Không thể tự thách đấu chính mình.');return;} const a=players.find(p=>p.id===challenger)!; const b=players.find(p=>p.id===opponent)!; setTickets(v=>v-1); setNotice(`Đã tạo yêu cầu: ${a.name} → ${b.name} • ${challengeType}. Đang chờ đối thủ chấp nhận.`); setHistory(h=>[{id:`m${Date.now()}`,a:a.name,b:b.name,result:'Đang chờ',mode:challengeType,delta:'—',time:'Vừa xong'},...h]);}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2"><Target size={19}/> Gửi lời thách đấu</button>
+        {notice&&<motion.div initial={{opacity:0,y:8}} animate={{opacity:1,y:0}} className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm font-bold text-indigo-800">{notice}</motion.div>}
+      </section>
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b"><h3 className="font-black text-slate-900 flex items-center gap-2"><History size={19} className="text-indigo-600"/> Lịch sử & yêu cầu</h3><p className="text-xs text-slate-500 mt-1">Theo dõi trạng thái các trận gần nhất.</p></div>
+        <div className="divide-y">{history.map(h=><div key={h.id} className="p-4"><div className="flex justify-between gap-3"><div className="font-black text-slate-800">{h.a} <span className="text-slate-400">vs</span> {h.b}</div><span className={`text-xs font-black px-2 py-1 rounded-full ${h.result==='Đang chờ'?'bg-amber-50 text-amber-700':'bg-emerald-50 text-emerald-700'}`}>{h.result}</span></div><div className="text-xs text-slate-500 mt-2 flex justify-between"><span>{h.mode} • {h.time}</span><b>{h.delta}</b></div></div>)}</div>
+      </section>
+      <section className="xl:col-span-2 grid md:grid-cols-4 gap-3">
+        {[['1vs1','Tối đa 3 bậc phía trên',CheckCircle2],['Vượt cấp','Cần vé/điều kiện',Ticket],['Bảo hộ','Miễn 1 lượt bị thách',Shield],['Chống spam','Giới hạn vé theo tuần',LockKeyhole]].map(([a,b,I]:any)=><div key={a} className="bg-white border rounded-2xl p-4"><I size={20} className="text-indigo-600"/><div className="font-black text-slate-800 mt-3">{a}</div><div className="text-xs text-slate-500 mt-1">{b}</div></div>)}
+      </section>
+    </div>}
 
     {active==='ranking' && <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-5 md:p-6 border-b flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Dữ liệu mẫu để nghiệm thu luật trước khi nối Google Sheets.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Demo offline</span></div>
@@ -122,7 +156,7 @@ export function Arena() {
     </div>}
 
     {active==='teacher' && <section className="bg-white rounded-2xl border p-6 shadow-sm">
-      <h2 className="text-xl font-black text-slate-900">Thiết lập Đấu trường dành cho giáo viên</h2><p className="text-slate-500 mt-1">Bản này là giao diện nghiệm thu. Các điều khiển sẽ nối Apps Script/Google Sheets ở giai đoạn backend.</p>
+      <div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Thiết lập Đấu trường dành cho giáo viên</h2><span className="text-sm font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-full">GV.Hồ Nguyễn Đa Thiện</span></div><p className="text-slate-500 mt-1">Bản này là giao diện nghiệm thu. Các điều khiển sẽ nối Apps Script/Google Sheets ở giai đoạn backend.</p>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
         {[['Luật trận','Chính xác trước • thời gian phá hòa'],['Phạm vi thách đấu','Cùng cấp: tối đa 3 bậc phía trên'],['Vượt cấp','Mặc định: người cuối cấp trên'],['Đại Thách Đấu','Cho phép Top cấp dưới thách Top cấp trên'],['Bảo hộ','1 lượt miễn + 3 trận định vị'],['Guardian','GV chỉ định, đổi theo tuần'],['Champion','Tự động = #1 thực tế'],['Ban cán sự','Vai trò riêng, không nâng hạng tự động'],['Đấu tổ','4 tổ • tiếp sức • công/giữ thành']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">{a}</div><div className="text-sm text-slate-500 mt-2">{b}</div></div>)}
       </div>
