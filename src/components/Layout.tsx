@@ -44,7 +44,7 @@ export function Layout() {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-4 bg-[#1F2A44] text-white">
-        <div className="font-bold text-lg">{settings.appName}</div>
+        <div><div className="font-bold text-lg">{settings.appName}</div><div className="text-[10px] text-indigo-200 font-semibold">GV.Hồ Nguyễn Đa Thiện</div></div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -60,7 +60,8 @@ export function Layout() {
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold">GV</div>
             <h1 className="text-xl font-bold text-white tracking-tight leading-tight">{settings.appName}</h1>
           </div>
-          <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider mb-4 line-clamp-2">{settings.description}</p>
+          <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider line-clamp-2">{settings.description}</p>
+          <p className="text-xs text-slate-300 mt-2 mb-4 font-semibold tracking-wide">GV.Hồ Nguyễn Đa Thiện</p>
         </div>
 
         <nav className="flex-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden mt-4 md:mt-0 min-h-0">
