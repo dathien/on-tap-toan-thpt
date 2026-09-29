@@ -36,7 +36,7 @@ const modes = [
 
 export function Arena() {
   const [players, setPlayers] = useState(initialPlayers);
-  const [active, setActive] = useState<'overview'|'challenge'|'ranking'|'demo'|'teacher'>('overview');
+  const [active, setActive] = useState<'overview'|'challenge'|'ranking'|'teacher'>('challenge');
   const [challenger, setChallenger] = useState('p6');
   const [opponent, setOpponent] = useState('p4');
   const [challengerInput, setChallengerInput] = useState('');
@@ -52,7 +52,6 @@ export function Arena() {
     {id:'m1', a:'Lan', b:'Hùng', result:'Lan thắng', mode:'1vs1', delta:'+10', time:'Hôm nay • 09:15'},
     {id:'m2', a:'Nam', b:'Phúc', result:'Phúc thắng', mode:'1vs1', delta:'+10', time:'Hôm qua • 14:20'},
   ]);
-  const [demoDone, setDemoDone] = useState(false);
   const battleQuestions = [
     { q:'Cho hàm số $f(x)=x^3-3x+2$. Hàm số nghịch biến trên khoảng nào?', options:['$(-\infty;-1)$','$(-1;1)$','$(1;+\infty)$','$(-\infty;+\infty)$'], correct:'B' },
     { q:'Nghiệm của phương trình $x^2-5x+6=0$ là:', options:['$x=1$ hoặc $x=6$','$x=2$ hoặc $x=3$','$x=-2$ hoặc $x=-3$','$x=3$ hoặc $x=5$'], correct:'B' },
@@ -60,16 +59,7 @@ export function Arena() {
   ];
   const sorted = useMemo(() => [...players].sort((a,b) => b.arena-a.arena), [players]);
 
-  const simulateUpset = () => {
-    setPlayers(prev => prev.map(p => {
-      if (p.id === 'p6') return {...p, tier:'Bạc', pos:1, arena:p.arena+30, xp:p.xp+120, shield:1, placement:3};
-      if (p.id === 'p4') return {...p, pos:2, arena:p.arena-10};
-      if (p.tier === 'Bạc' && p.id !== 'p4') return {...p, pos:p.pos+1};
-      return p;
-    }));
-    setDemoDone(true);
-  };
-  const resetDemo = () => { setPlayers(initialPlayers); setDemoDone(false); };
+
 
   return <div className="max-w-7xl mx-auto space-y-6 pb-14">
     <section className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-slate-950 via-indigo-950 to-violet-900 text-white p-7 md:p-10 shadow-xl">
@@ -81,7 +71,7 @@ export function Arena() {
           <h1 className="text-3xl md:text-5xl font-black mt-5 leading-tight">Đấu trường Tri thức</h1>
           <p className="text-indigo-100 mt-4 text-lg leading-7 max-w-2xl">1vs1, vượt cấp, Ban cán sự, Guardian, Champion, đấu tổ và tiếp sức — cùng một hệ thống xếp hạng nhưng không khóa cơ hội tiến bộ của học sinh.</p>
           <div className="flex flex-wrap gap-3 mt-6">
-            <button onClick={()=>setActive('demo')} className="px-5 py-3 rounded-xl bg-white text-indigo-800 font-black hover:-translate-y-0.5 transition">Chạy tình huống mẫu</button>
+            <button onClick={()=>setActive('challenge')} className="px-5 py-3 rounded-xl bg-white text-indigo-800 font-black hover:-translate-y-0.5 transition">Tạo thách đấu</button>
             <button onClick={()=>setActive('ranking')} className="px-5 py-3 rounded-xl bg-white/10 border border-white/20 font-bold hover:bg-white/15 transition">Xem bảng xếp hạng</button>
           </div>
         </div>
@@ -94,7 +84,7 @@ export function Arena() {
     </section>
 
     <div className="flex gap-2 overflow-x-auto pb-1">
-      {([['overview','Tổng quan'],['challenge','Thách đấu'],['ranking','Xếp hạng'],['demo','Mô phỏng luật'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
+      {([['overview','Tổng quan'],['challenge','Thách đấu'],['ranking','Xếp hạng'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
     </div>
 
     {active==='overview' && <>
@@ -160,7 +150,7 @@ export function Arena() {
     </div>}
 
     {active==='ranking' && <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 md:p-6 border-b flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Dữ liệu mẫu để nghiệm thu luật trước khi nối Google Sheets.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Demo offline</span></div>
+      <div className="p-5 md:p-6 border-b flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Bảng xếp hạng của lớp sẽ cập nhật theo kết quả các trận thách đấu.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Đấu trường lớp học</span></div>
       <div className="divide-y">
         {sorted.map((p,i)=><motion.div layout key={p.id} className="p-4 md:px-6 flex items-center gap-4">
           <div className={`w-10 text-center font-black ${i<3?'text-amber-600':'text-slate-400'}`}>{i===0?'👑':`#${i+1}`}</div>
@@ -170,24 +160,6 @@ export function Arena() {
         </motion.div>)}
       </div>
     </section>}
-
-    {active==='demo' && <div className="grid lg:grid-cols-[1.15fr_.85fr] gap-5">
-      <section className="bg-white rounded-2xl border p-6 shadow-sm">
-        <div className="flex justify-between gap-3"><div><h2 className="text-xl font-black text-slate-900">Tình huống vượt cấp đặc biệt</h2><p className="text-slate-500 mt-1">Top 1 Đồng thách đấu Top 1 Bạc.</p></div>{demoDone&&<button onClick={resetDemo} className="h-10 px-3 rounded-xl border font-bold text-slate-600 flex items-center gap-2"><RotateCcw size={16}/> Reset</button>}</div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-8">
-          <div className="rounded-2xl border-2 border-orange-200 bg-orange-50 p-5 text-center"><div className="text-3xl">🔥</div><div className="font-black text-xl mt-2">An</div><div className="text-sm font-bold text-orange-700">{demoDone?'Bạc #1':'Đồng #1'}</div><div className="text-2xl font-black mt-3">{demoDone?950:920}</div><div className="text-xs text-slate-500">Arena</div></div>
-          <div className="font-black text-2xl text-indigo-600">VS</div>
-          <div className="rounded-2xl border-2 border-slate-200 bg-slate-50 p-5 text-center"><div className="text-3xl">🎖️</div><div className="font-black text-xl mt-2">Bình</div><div className="text-sm font-bold text-slate-600">Lớp trưởng • Bạc #{demoDone?'2':'1'}</div><div className="text-2xl font-black mt-3">{demoDone?1110:1120}</div><div className="text-xs text-slate-500">Arena</div></div>
-        </div>
-        {!demoDone?<button onClick={simulateUpset} className="w-full mt-6 py-3.5 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex justify-center items-center gap-2"><Zap size={19}/> Mô phỏng: AN THẮNG</button>:<motion.div initial={{opacity:0,scale:.97}} animate={{opacity:1,scale:1}} className="mt-6 rounded-2xl bg-emerald-50 border border-emerald-200 p-5"><div className="font-black text-emerald-800 text-lg">🏆 Vượt cấp thành công!</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm text-emerald-900"><div>↑ An chiếm <b>Bạc #1</b></div><div>↓ Bình xuống <b>Bạc #2</b></div><div>+30 Arena • +120 XP</div><div>🛡 1 lượt miễn thách đấu</div><div>🧱 3 trận bảo vệ cấp</div><div>⚠ Người cuối Bạc → vùng bảo vệ</div></div></motion.div>}
-      </section>
-      <section className="bg-slate-950 text-white rounded-2xl p-6 shadow-sm"><h3 className="font-black text-lg">Luật đang áp dụng</h3><div className="space-y-4 mt-5 text-sm text-slate-300">
-        <div className="flex gap-3"><Crown className="text-amber-400 shrink-0" size={20}/><p><b className="text-white">Tranh vị trí:</b> thắng Top #1 cấp trên thì chiếm đúng #1; người thua xuống #2.</p></div>
-        <div className="flex gap-3"><Shield className="text-sky-400 shrink-0" size={20}/><p><b className="text-white">Bảo hộ:</b> bảo vệ cấp, không bảo vệ ngôi vô thời hạn.</p></div>
-        <div className="flex gap-3"><LockKeyhole className="text-violet-400 shrink-0" size={20}/><p><b className="text-white">Chống spam:</b> thách Top cấp trên cần Vé Đại Thách Đấu/điều kiện GV.</p></div>
-        <div className="flex gap-3"><Flag className="text-emerald-400 shrink-0" size={20}/><p><b className="text-white">Người cuối cấp:</b> vào vùng bảo vệ, có trận giữ cấp; không bị rớt oan.</p></div>
-      </div></section>
-    </div>}
 
     {active==='teacher' && <section className="bg-white rounded-2xl border p-6 shadow-sm">
       <div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Thiết lập Đấu trường dành cho giáo viên</h2></div><p className="text-slate-500 mt-1">Bản này là giao diện nghiệm thu. Các điều khiển sẽ nối Apps Script/Google Sheets ở giai đoạn backend.</p>
