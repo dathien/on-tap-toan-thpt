@@ -14,7 +14,8 @@ import {
   Library, 
   Settings,
   Menu,
-  X
+  X,
+  Trophy
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -28,6 +29,7 @@ const mainNavItems = [
   { id: 'exam', label: 'Kiểm tra - Thi', icon: ClipboardCheck, path: '/exam' },
   { id: 'lab', label: 'Phòng Lab Toán học', icon: FlaskConical, path: '/lab' },
   { id: 'treasure', label: 'Kho báu Toán học', icon: Gem, path: '/treasure' },
+  { id: 'arena', label: 'Đấu trường Tri thức', icon: Trophy, path: '/arena' },
   { id: 'results', label: 'Kết quả học tập', icon: BarChart3, path: '/results' },
   { id: 'classes', label: 'Lớp học', icon: Users, path: '/classes' },
   { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
