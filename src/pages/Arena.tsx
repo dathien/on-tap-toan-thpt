@@ -55,6 +55,8 @@ export function Arena() {
   const [tickets, setTickets] = useState(3);
   const [notice, setNotice] = useState('');
   const [battleMinutes, setBattleMinutes] = useState(5);
+  const [matchTypeOverride, setMatchTypeOverride] = useState('');
+  const [editingMatchType, setEditingMatchType] = useState(false);
   const [timeLeft, setTimeLeft] = useState(300);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeExpired, setTimeExpired] = useState(false);
@@ -84,6 +86,8 @@ export function Arena() {
     if (a.tier !== b.tier) return { type:'Thách đấu vượt cấp', reason:`${a.name} (${a.tier}) đang thách ${b.name} (${b.tier}).`, icon:'🚀' };
     return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}.`, icon:'⚔️' };
   }, [challenger, opponent, players, sorted]);
+
+  const effectiveMatchType = matchTypeOverride || challengeMeta.type;
 
   useEffect(() => {
     if (!inBattle || !timerRunning || timeLeft <= 0) return;
@@ -162,16 +166,33 @@ export function Arena() {
               {opponent==='manual'&&<input value={opponentInput} onChange={e=>setOpponentInput(e.target.value)} placeholder="Nhập họ và tên đối thủ" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
             <div className="md:col-span-2">
-              <div className="text-sm font-bold text-slate-700">Loại trận tự động</div>
-              <div className="mt-2 rounded-2xl border-2 border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50 px-4 py-3.5">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">{challengeMeta.icon}</div>
-                  <div className="min-w-0">
-                    <div className="font-black text-indigo-900">{challengeMeta.type}</div>
-                    <div className="mt-0.5 text-xs md:text-sm font-medium text-slate-600">{challengeMeta.reason}</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-bold text-slate-700">Loại trận</div>
+                {matchTypeOverride && <button type="button" onClick={()=>{setMatchTypeOverride('');setEditingMatchType(false)}} className="text-xs font-black text-indigo-700 hover:text-indigo-900">↩ Dùng lại tự động</button>}
+              </div>
+              <div className={`mt-2 rounded-2xl border-2 px-4 py-3.5 ${matchTypeOverride?'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50':'border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50'}`}>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">{matchTypeOverride?'✏️':challengeMeta.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className={`font-black ${matchTypeOverride?'text-amber-900':'text-indigo-900'}`}>{effectiveMatchType}</div>
+                    <div className="mt-0.5 text-xs md:text-sm font-medium text-slate-600">{matchTypeOverride?'Giáo viên đã điều chỉnh loại trận.':challengeMeta.reason}</div>
                   </div>
-                  <span className="ml-auto hidden sm:inline-flex rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-indigo-700 shadow-sm">TỰ NHẬN DIỆN</span>
+                  <span className={`rounded-full bg-white px-2.5 py-1 text-[11px] font-black shadow-sm ${matchTypeOverride?'text-amber-700':'text-indigo-700'}`}>{matchTypeOverride?'GV ĐIỀU CHỈNH':'TỰ NHẬN DIỆN'}</span>
+                  <button type="button" onClick={()=>setEditingMatchType(v=>!v)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700">✏️ {editingMatchType?'Đóng':'Chỉnh loại trận'}</button>
                 </div>
+                {editingMatchType && <div className="mt-4 border-t border-slate-200/80 pt-4">
+                  <label className="text-xs font-black uppercase tracking-wide text-slate-500">Giáo viên chọn loại trận
+                    <select value={matchTypeOverride || challengeMeta.type} onChange={e=>setMatchTypeOverride(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200">
+                      <option>1vs1 cùng cấp</option>
+                      <option>Thách đấu vượt cấp</option>
+                      <option>Thách đấu Ban cán sự</option>
+                      <option>Thách đấu Người giữ ải</option>
+                      <option>Tranh ngôi Champion</option>
+                      <option>1vs1 tự do</option>
+                    </select>
+                  </label>
+                  <div className="mt-2 text-xs text-slate-500">App vẫn đề xuất tự động; lựa chọn của giáo viên sẽ được ưu tiên cho trận hiện tại.</div>
+                </div>}
               </div>
             </div>
           </div>
@@ -182,7 +203,7 @@ export function Arena() {
             <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm text-indigo-800 font-bold">⏱ Nhập 1–90 phút</div>
           </div>
           <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600"><b className="text-slate-900">Cách tổ chức:</b> hai học sinh giải trên giấy hoặc lên bảng. App chỉ hiển thị câu hỏi, nhận đáp án A–D cuối cùng, chấm điểm và điều khiển diễn biến trận.</div>
-          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} setTickets(v=>v-1); setBattle({a:aName,b:bName,mode:challengeMeta.type}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
+          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} setTickets(v=>v-1); setBattle({a:aName,b:bName,mode:effectiveMatchType}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
             <div className="px-5 pt-5 pb-4 text-center">
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black tracking-wide text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> TRẬN ĐẤU ĐÃ SẴN SÀNG</div>
               <div className="mt-3 flex items-center justify-center gap-3 text-slate-900"><span className="text-xl md:text-2xl font-black">{battle.a}</span><span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-black text-white">VS</span><span className="text-xl md:text-2xl font-black">{battle.b}</span></div>
