@@ -31,6 +31,7 @@ import { ExamList } from './pages/ExamList';
 import { Roadmap } from './pages/Roadmap';
 import { TeacherResults } from './pages/TeacherResults';
 import { ClassManagement } from './pages/ClassManagement';
+import { Arena } from './pages/Arena';
 
 export default function App() {
   const settings = useAppStore(state => state.settings);
@@ -102,6 +103,7 @@ export default function App() {
           <Route path="exam" element={<LiveTracking />} />
           <Route path="lab" element={<MathLab />} />
           <Route path="treasure" element={<TreasureHunt />} />
+          <Route path="arena" element={<Arena />} />
           <Route path="create" element={<CreateExam />} />
           <Route path="materials" element={<ExamList />} />
           <Route path="exam-list" element={<ExamList />} />
