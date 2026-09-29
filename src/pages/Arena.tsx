@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Crown, Shield, Swords, Users, Trophy, Zap, LockKeyhole, Medal, Flag, Route, ChevronRight, Sparkles, RotateCcw, Ticket, History, Target, CheckCircle2, Play, ArrowRight, Clock3 } from 'lucide-react';
-import { MathRenderer } from '../components/MathRenderer';
+import { MathText } from '../components/MathText';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
@@ -64,7 +64,7 @@ export function Arena() {
     {id:'m2', a:'Nam', b:'Phúc', result:'Phúc thắng', mode:'1vs1', delta:'+10', time:'Hôm qua • 14:20'},
   ]);
   const battleQuestions = [
-    { q:'Cho hàm số $f(x)=x^3-3x+2$. Hàm số nghịch biến trên khoảng nào?', options:['$(-\infty;-1)$','$(-1;1)$','$(1;+\infty)$','$(-\infty;+\infty)$'], correct:'B' },
+    { q:'Cho hàm số $f(x)=x^3-3x+2$. Hàm số nghịch biến trên khoảng nào?', options:['$(-\\infty;-1)$','$(-1;1)$','$(1;+\\infty)$','$(-\\infty;+\\infty)$'], correct:'B' },
     { q:'Nghiệm của phương trình $x^2-5x+6=0$ là:', options:['$x=1$ hoặc $x=6$','$x=2$ hoặc $x=3$','$x=-2$ hoặc $x=-3$','$x=3$ hoặc $x=5$'], correct:'B' },
     { q:'Đạo hàm của hàm số $y=x^3-2x$ là:', options:["$y'=3x^2-2$","$y'=x^2-2$","$y'=3x-2$","$y'=3x^2$"], correct:'A' },
   ];
@@ -151,8 +151,8 @@ export function Arena() {
         </div>
         <div className="p-5 md:p-8 max-w-5xl mx-auto">
           <div className="flex flex-wrap justify-between items-center gap-3"><div className="font-black text-indigo-700">CÂU {questionIndex+1} / {battleQuestions.length}</div><div className="flex items-center gap-2 text-sm font-bold text-slate-500"><Clock3 size={17}/> Giải trên giấy hoặc trên bảng rồi chọn kết quả</div></div>
-          <div className="mt-6 text-lg md:text-xl font-bold text-slate-900 leading-8"><MathRenderer value={q.q}/></div>
-          <div className="grid md:grid-cols-2 gap-3 mt-6">{q.options.map((opt,i)=><div key={i} className={`rounded-2xl border-2 p-4 flex gap-3 items-center ${cur.revealed&&letters[i]===q.correct?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50'}`}><span className="w-9 h-9 rounded-xl bg-white border flex items-center justify-center font-black text-indigo-700">{letters[i]}</span><MathRenderer value={opt}/></div>)}</div>
+          <div className="mt-6 text-lg md:text-xl font-bold text-slate-900 leading-8"><MathText text={q.q}/></div>
+          <div className="grid md:grid-cols-2 gap-3 mt-6">{q.options.map((opt,i)=><div key={i} className={`rounded-2xl border-2 p-4 flex gap-3 items-center ${cur.revealed&&letters[i]===q.correct?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50'}`}><span className="w-9 h-9 rounded-xl bg-white border flex items-center justify-center font-black text-indigo-700">{letters[i]}</span><MathText text={opt}/></div>)}</div>
           <div className="grid md:grid-cols-2 gap-4 mt-7">{(['a','b'] as const).map(side=><div key={side} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">Đáp án của {side==='a'?battle.a:battle.b}</div><div className="grid grid-cols-4 gap-2 mt-3">{letters.map(L=><button disabled={cur.revealed} key={L} onClick={()=>setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],[side]:L}}))} className={`py-3 rounded-xl border-2 font-black transition ${cur[side]===L?'border-indigo-600 bg-indigo-600 text-white':'border-slate-200 hover:border-indigo-300'}`}>{L}</button>)}</div></div>)}</div>
           {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],revealed:true}}))} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div><b>{battle.a}:</b> {cur.a===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div><div><b>{battle.b}:</b> {cur.b===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div></div>{questionIndex<battleQuestions.length-1?<button onClick={()=>setQuestionIndex(v=>v+1)} className="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2">CÂU TIẾP THEO <ArrowRight size={18}/></button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0); const finalB=scoreB+(cur.b===q.correct?1:0); const result=finalA===finalB?'Hòa':finalA>finalB?`${battle.a} thắng`:`${battle.b} thắng`; setHistory(h=>[{id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:'Vừa xong'},...h]); setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({}); setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}`);}} className="mt-4 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center gap-2"><Trophy size={18}/> KẾT THÚC TRẬN</button>}</div>}
           <button onClick={()=>setInBattle(false)} className="mt-5 text-sm font-bold text-slate-500 hover:text-slate-800">← Quay lại điều khiển trận</button>
