@@ -36,7 +36,18 @@ const modes = [
 
 export function Arena() {
   const [players, setPlayers] = useState(initialPlayers);
-  const [active, setActive] = useState<'overview'|'challenge'|'ranking'|'teacher'>('challenge');
+  const [active, setActive] = useState<'overview'|'challenge'|'teams'|'ranking'|'teacher'>('challenge');
+  const [rankingView, setRankingView] = useState<'individual'|'team'>('individual');
+  const [teamMode, setTeamMode] = useState<'Đấu tổ'|'Tiếp sức'>('Đấu tổ');
+  const [teamA, setTeamA] = useState('Tổ 1');
+  const [teamB, setTeamB] = useState('Tổ 2');
+  const [teamNotice, setTeamNotice] = useState('');
+  const [teams, setTeams] = useState([
+    {name:'Tổ 1', points:320, wins:6, relay:2},
+    {name:'Tổ 2', points:295, wins:5, relay:1},
+    {name:'Tổ 3', points:270, wins:4, relay:1},
+    {name:'Tổ 4', points:245, wins:3, relay:0},
+  ]);
   const [challenger, setChallenger] = useState('p6');
   const [opponent, setOpponent] = useState('p4');
   const [challengerInput, setChallengerInput] = useState('');
@@ -84,7 +95,7 @@ export function Arena() {
     </section>
 
     <div className="flex gap-2 overflow-x-auto pb-1">
-      {([['overview','Tổng quan'],['challenge','Thách đấu'],['ranking','Xếp hạng'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
+      {([['overview','Tổng quan'],['challenge','Thách đấu'],['teams','Tổ & Tiếp sức'],['ranking','Xếp hạng'],['teacher','Thiết lập GV']] as const).map(([id,label]) => <button key={id} onClick={()=>setActive(id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl font-bold border transition ${active===id?'bg-indigo-600 text-white border-indigo-600 shadow':'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>{label}</button>)}
     </div>
 
     {active==='overview' && <>
@@ -149,16 +160,39 @@ export function Arena() {
       </motion.section>})()}
     </div>}
 
+
+
+    {active==='teams' && <div className="grid xl:grid-cols-[1.05fr_.95fr] gap-5">
+      <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><Users className="text-indigo-600"/> Đấu tổ & Tiếp sức</h2>
+        <p className="text-sm text-slate-500 mt-1">Thi đấu theo đúng Tổ 1–4 của lớp. Điểm của hoạt động nhóm được cộng cho tổ, không cộng vào bảng xếp hạng cá nhân.</p>
+        <div className="grid sm:grid-cols-2 gap-3 mt-5">
+          {(['Đấu tổ','Tiếp sức'] as const).map(m=><button key={m} onClick={()=>setTeamMode(m)} className={`p-4 rounded-2xl border-2 text-left font-black ${teamMode===m?'border-indigo-600 bg-indigo-50 text-indigo-800':'border-slate-200'}`}>{m==='Đấu tổ'?'🛡️':'🏃'} {m}<div className="text-xs font-medium text-slate-500 mt-1">{m==='Đấu tổ'?'Hai tổ đối đầu trực tiếp':'Các thành viên lần lượt hoàn thành từng chặng'}</div></button>)}
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4 mt-5">
+          <label className="text-sm font-bold text-slate-700">Tổ thách đấu<select value={teamA} onChange={e=>setTeamA(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
+          <label className="text-sm font-bold text-slate-700">Tổ đối thủ<select value={teamB} onChange={e=>setTeamB(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
+        </div>
+        {teamMode==='Tiếp sức'&&<div className="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900"><b>Luật tiếp sức:</b> mỗi thành viên phụ trách một chặng. Chỉ khi chặng hiện tại được xác nhận đúng mới mở chặng tiếp theo. Giáo viên điều phối thứ tự thành viên của từng tổ.</div>}
+        <button onClick={()=>{if(teamA===teamB){setTeamNotice('Vui lòng chọn hai tổ khác nhau.');return;} setTeamNotice(`Đã tạo ${teamMode}: ${teamA} vs ${teamB}. Giáo viên có thể bắt đầu hoạt động.`)}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 text-white font-black">⚔️ BẮT ĐẦU {teamMode.toUpperCase()}</button>
+        {teamNotice&&<div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 p-4 font-bold text-indigo-800">{teamNotice}</div>}
+      </section>
+      <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="p-5 border-b"><h3 className="font-black text-slate-900">🏆 Xếp hạng các tổ</h3><p className="text-xs text-slate-500 mt-1">Đấu tổ và tiếp sức chỉ tác động bảng xếp hạng tổ.</p></div>
+        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
+      </section>
+    </div>}
+
     {active==='ranking' && <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 md:p-6 border-b flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Bảng xếp hạng của lớp sẽ cập nhật theo kết quả các trận thách đấu.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Đấu trường lớp học</span></div>
-      <div className="divide-y">
+      <div className="p-5 md:p-6 border-b"><div className="flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Xếp hạng cá nhân và xếp hạng tổ được tách riêng.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Đấu trường lớp học</span></div><div className="flex gap-2 mt-4"><button onClick={()=>setRankingView('individual')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='individual'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Cá nhân</button><button onClick={()=>setRankingView('team')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='team'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Theo tổ</button></div></div>
+      {rankingView==='individual'?<div className="divide-y">
         {sorted.map((p,i)=><motion.div layout key={p.id} className="p-4 md:px-6 flex items-center gap-4">
           <div className={`w-10 text-center font-black ${i<3?'text-amber-600':'text-slate-400'}`}>{i===0?'👑':`#${i+1}`}</div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center font-black text-indigo-700">{p.name[0]}</div>
           <div className="min-w-0 flex-1"><div className="font-black text-slate-800 truncate">{p.name} {p.role!=='Học sinh'&&<span className="text-xs ml-1 text-indigo-600">• {p.role}</span>}</div><div className="flex flex-wrap gap-1.5 mt-1"><span className={`text-xs border rounded-full px-2 py-0.5 font-bold ${tierStyle[p.tier]}`}>{p.tier} #{p.pos}</span>{p.guardian&&<span className="text-xs rounded-full px-2 py-0.5 font-bold bg-violet-50 text-violet-700">🏰 {p.guardian}</span>}{p.shield? <span className="text-xs rounded-full px-2 py-0.5 font-bold bg-sky-50 text-sky-700">🛡 {p.shield}</span>:null}</div></div>
           <div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
         </motion.div>)}
-      </div>
+      </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
     </section>}
 
     {active==='teacher' && <section className="bg-white rounded-2xl border p-6 shadow-sm">
