@@ -18,8 +18,8 @@ const slides = [
     eyebrow: 'ĐẤU TRƯỜNG TRI THỨC',
     title: 'Học mà chơi — thách đấu để cùng tiến bộ',
     desc: 'Sẵn sàng cho 1vs1, vượt cấp, đấu tổ và tiếp sức với cơ chế xếp hạng công bằng.',
-    cta: 'Khám phá kho báu',
-    path: '/treasure',
+    cta: 'Vào Đấu trường',
+    path: '/arena',
     Icon: Trophy,
     chips: ['1 vs 1', 'Vượt cấp', 'Đấu tổ'],
     accent: 'from-amber-500 via-orange-500 to-rose-500'
