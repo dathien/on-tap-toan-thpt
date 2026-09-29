@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Plus, Play, Zap, BookOpen, Bookmark, GraduationCap } from 'lucide-react';
+import { HomeHeroSlider } from '../components/HomeHeroSlider';
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -63,6 +64,8 @@ export function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-12">
+      <HomeHeroSlider />
+
       {/* Header section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-8 rounded-[20px] shadow-sm border border-slate-200">
         <div>
