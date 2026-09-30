@@ -227,7 +227,7 @@ export function Arena() {
     if (b.guardian) return { type:'Thách đấu Người giữ ải', reason:`${b.name} đang giữ ${b.guardian}.`, icon:'🛡️' };
     if (b.role !== 'Học sinh') return { type:'Thách đấu Ban cán sự', reason:`${b.name} đang giữ vai trò ${b.role}.`, icon:'🎖️' };
     if (a.tier !== b.tier) return { type:'Thách đấu vượt cấp', reason:`${a.name} (${a.tier}) đang thách ${b.name} (${b.tier}).`, icon:'🚀' };
-    return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}.`, icon:'⚔️' };
+    return { type:'1vs1 cùng cấp', reason:`Hạng ${a.pos} đấu Hạng ${b.pos} tại ${arenaName[a.arena]}.`, icon:'⚔️' };
   }, [challenger, opponent, players, sorted]);
 
   const effectiveMatchType = matchTypeOverride || challengeMeta.type;
@@ -377,13 +377,13 @@ export function Arena() {
           <div className="grid md:grid-cols-2 gap-4 mt-6">
             <label className="text-sm font-bold text-slate-700">Người thách đấu
               <select value={challenger} onChange={e=>setChallenger(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">
-                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
+                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} • Hạng {p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
               </select>
               {challenger==='manual'&&<input value={challengerInput} onChange={e=>setChallengerInput(e.target.value)} placeholder="Nhập họ và tên học sinh" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
             <label className="text-sm font-bold text-slate-700">Đối thủ
               <select value={opponent} onChange={e=>setOpponent(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">
-                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
+                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} • Hạng {p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
               </select>
               {opponent==='manual'&&<input value={opponentInput} onChange={e=>setOpponentInput(e.target.value)} placeholder="Nhập họ và tên đối thủ" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
@@ -499,7 +499,7 @@ export function Arena() {
         {sorted.map((p,i)=><motion.div layout key={p.id} className="p-4 md:px-6 flex items-center gap-4">
           <div className={`w-10 text-center font-black ${i<3?'text-amber-600':'text-slate-400'}`}>{i===0?'👑':`#${i+1}`}</div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center font-black text-indigo-700">{p.name[0]}</div>
-          <div className="min-w-0 flex-1"><div className="font-black text-slate-800 truncate">{p.name} {p.role!=='Học sinh'&&<span className="text-xs ml-1 text-indigo-600">• {p.role}</span>}</div><div className="flex flex-wrap gap-1.5 mt-1"><span className={`text-xs border rounded-full px-2 py-0.5 font-bold ${tierStyle[p.tier]}`}>{p.tier} #{p.pos}</span>{p.guardian&&<span className="text-xs rounded-full px-2 py-0.5 font-bold bg-violet-50 text-violet-700">🏰 {p.guardian}</span>}{p.shield? <span className="text-xs rounded-full px-2 py-0.5 font-bold bg-sky-50 text-sky-700">🛡 {p.shield}</span>:null}</div></div>
+          <div className="min-w-0 flex-1"><div className="font-black text-slate-800 truncate">{p.name} {p.role!=='Học sinh'&&<span className="text-xs ml-1 text-indigo-600">• {p.role}</span>}</div><div className="flex flex-wrap gap-1.5 mt-1"><span className={`text-xs border rounded-full px-2 py-0.5 font-bold ${tierStyle[p.tier]}`}>{p.tier} • Hạng {p.pos}</span>{p.guardian&&<span className="text-xs rounded-full px-2 py-0.5 font-bold bg-violet-50 text-violet-700">🏰 {p.guardian}</span>}{p.shield? <span className="text-xs rounded-full px-2 py-0.5 font-bold bg-sky-50 text-sky-700">🛡 {p.shield}</span>:null}</div></div>
           <div className="hidden sm:flex items-center gap-5 text-center"><div><div className="font-black text-slate-800">{p.wins}</div><div className="text-[11px] text-slate-400">Trận thắng</div></div><div><div className="font-black text-slate-800">{daysHeld(p.rankSince,p.rankDays)}</div><div className="text-[11px] text-slate-400">Ngày giữ hạng</div></div></div><div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
         </motion.div>)}
       </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức • {daysHeld(t.rankSince,t.rankDays)} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
