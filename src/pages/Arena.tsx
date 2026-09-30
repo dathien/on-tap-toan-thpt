@@ -404,18 +404,30 @@ export function Arena() {
                   <button type="button" onClick={()=>setEditingMatchType(v=>!v)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700">✏️ {editingMatchType?'Đóng':'Chỉnh loại trận'}</button>
                 </div>
                 {editingMatchType && <div className="mt-4 border-t border-slate-200/80 pt-4">
-                  <label className="text-xs font-black uppercase tracking-wide text-slate-500">Giáo viên chọn loại trận
-                    <select value={matchTypeOverride || challengeMeta.type} onChange={e=>setMatchTypeOverride(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200">
-                      <option>1vs1 cùng cấp</option>
-                      <option>Thách đấu vượt cấp</option>
-                      <option>Thách đấu Ban cán sự</option>
-                      <option>Thách đấu Người giữ ải</option>
-                      <option>Tranh Hạng 1 cùng cấp</option>
-                      <option>Thách đấu Champion toàn lớp</option>
-                      <option>1vs1 tự do</option>
-                    </select>
-                  </label>
-                  <div className="mt-2 text-xs text-slate-500">App vẫn đề xuất tự động; lựa chọn của giáo viên sẽ được ưu tiên cho trận hiện tại.</div>
+                  <div className="text-xs font-black uppercase tracking-wide text-slate-500">Chọn 1 trong 6 loại trận</div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {[
+                      ['⚔️','1vs1 cùng cấp','Hai học sinh trong cùng một cấp.'],
+                      ['🚀','Thách đấu vượt cấp','Học sinh thách đối thủ ở cấp cao hơn.'],
+                      ['🎖️','Thách đấu Ban cán sự','Thách đấu Lớp trưởng, Bí thư, Thủ quỹ...'],
+                      ['🛡️','Thách đấu Người giữ ải','Trận đặc biệt với Người giữ ải.'],
+                      ['🥇','Tranh Hạng 1 của cấp','Tranh vị trí Hạng 1 trong Tân binh/Đồng/Bạc/Vàng.'],
+                      ['👑','Thách đấu Champion toàn lớp','Thách đấu Champion duy nhất của toàn lớp.'],
+                    ].map(([icon,type,desc])=>{
+                      const selected = (matchTypeOverride || challengeMeta.type) === type || (type === 'Tranh Hạng 1 của cấp' && effectiveMatchType.startsWith('Tranh Hạng 1 '));
+                      return <button key={type} type="button" onClick={()=>{
+                        const chosen = type === 'Tranh Hạng 1 của cấp'
+                          ? `Tranh Hạng 1 ${players.find(p=>p.id===opponent)?.tier || players.find(p=>p.id===challenger)?.tier || 'của cấp'}`
+                          : type;
+                        setMatchTypeOverride(chosen);
+                        setEditingMatchType(false);
+                      }} className={`rounded-xl border-2 p-3 text-left transition ${selected?'border-indigo-500 bg-indigo-50 shadow-sm':'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50'}`}>
+                        <div className="flex items-center gap-2"><span className="text-lg">{icon}</span><span className="text-sm font-black text-slate-900">{type}</span></div>
+                        <div className="mt-1 text-xs font-medium leading-5 text-slate-500">{desc}</div>
+                      </button>
+                    })}
+                  </div>
+                  <div className="mt-3 text-xs text-slate-500">App tự nhận diện trước. Giáo viên chỉ chọn lại khi muốn điều chỉnh trận hiện tại.</div>
                 </div>}
               </div>
             </div>
