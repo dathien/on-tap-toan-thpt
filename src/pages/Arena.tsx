@@ -110,7 +110,50 @@ function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent, arena
   </div>;
 }
 
-export function Arena() {
+export const OFFICIAL_ARENA_RANKS: Record<string,{tier:Tier;pos:number;points:number}> = {
+  'Nguyễn Trọng Thức': {tier:'Tân binh' as Tier,pos:1,points:500},
+  'Nguyễn Thị Ngọc Ánh': {tier:'Tân binh' as Tier,pos:2,points:490},
+  'Nguyễn Đỗ Thanh Binh': {tier:'Tân binh' as Tier,pos:3,points:480},
+  'Nguyễn Thị Thanh Hương': {tier:'Tân binh' as Tier,pos:4,points:470},
+  'Nguyễn Hoàng Khang': {tier:'Tân binh' as Tier,pos:5,points:460},
+  'Nguyễn Phạm Xuân Nghi': {tier:'Tân binh' as Tier,pos:6,points:450},
+  'Nguyễn Ngọc Phương Nghi': {tier:'Tân binh' as Tier,pos:7,points:440},
+  'Nguyễn Hoàng Triều': {tier:'Tân binh' as Tier,pos:8,points:430},
+  'Nguyễn Ngô Hoàn Tuấn': {tier:'Tân binh' as Tier,pos:9,points:420},
+  'Hoàng Công Thành': {tier:'Tân binh' as Tier,pos:10,points:410},
+  'Mai Phương Uyên': {tier:'Đồng' as Tier,pos:1,points:900},
+  'Lê Việt Quốc Vương': {tier:'Đồng' as Tier,pos:2,points:890},
+  'Trần Xuân Lưu Bảo': {tier:'Đồng' as Tier,pos:3,points:880},
+  'Hoa Hoàng Quý Đô': {tier:'Đồng' as Tier,pos:4,points:870},
+  'Nguyễn Nguyên Hạo': {tier:'Đồng' as Tier,pos:5,points:860},
+  'Lê Nguyễn Ngọc Hương': {tier:'Đồng' as Tier,pos:6,points:850},
+  'Trần Ngọc Khánh Linh': {tier:'Đồng' as Tier,pos:7,points:840},
+  'Nguyễn Thành Nhơn': {tier:'Đồng' as Tier,pos:8,points:830},
+  'Ngô Duy Khoa': {tier:'Đồng' as Tier,pos:9,points:820},
+  'Đỗ Đăng Khoa': {tier:'Đồng' as Tier,pos:10,points:810},
+  'Huỳnh Nhật Quang': {tier:'Bạc' as Tier,pos:1,points:1300},
+  'Tăng Hoàng Long': {tier:'Bạc' as Tier,pos:2,points:1290},
+  'Đặng Nguyễn Kim Ngân': {tier:'Bạc' as Tier,pos:3,points:1280},
+  'Nguyễn Trung Bảo': {tier:'Bạc' as Tier,pos:4,points:1270},
+  'Phạm Gia Bảo': {tier:'Bạc' as Tier,pos:5,points:1260},
+  'Nguyễn Tấn Đạt': {tier:'Bạc' as Tier,pos:6,points:1250},
+  'Nguyễn Hồng Diễm': {tier:'Bạc' as Tier,pos:7,points:1240},
+  'Trần Hữu Thành': {tier:'Bạc' as Tier,pos:8,points:1230},
+  'Tô Quốc Thịnh': {tier:'Bạc' as Tier,pos:9,points:1220},
+  'Nguyễn Xuân Trúc': {tier:'Bạc' as Tier,pos:10,points:1210},
+  'Ngô Ngọc Lam': {tier:'Vàng' as Tier,pos:1,points:1700},
+  'Nguyễn Huyền Diệu': {tier:'Vàng' as Tier,pos:2,points:1690},
+  'Lê Nguyễn Quốc Duy': {tier:'Vàng' as Tier,pos:3,points:1680},
+  'Thân Nguyễn Quốc Bảo': {tier:'Vàng' as Tier,pos:4,points:1670},
+  'Phùng Trần Thanh Trúc': {tier:'Vàng' as Tier,pos:5,points:1660},
+  'Nguyễn Huỳnh Hải Vy': {tier:'Vàng' as Tier,pos:6,points:1650},
+  'Lê Huỳnh Hương Y': {tier:'Vàng' as Tier,pos:7,points:1640},
+  'Trần Tấn Tài': {tier:'Vàng' as Tier,pos:8,points:1630},
+  'Nguyễn Tấn Lộc': {tier:'Vàng' as Tier,pos:9,points:1620},
+  'Huỳnh Thị Như Hoàng': {tier:'Vàng' as Tier,pos:10,points:1610},
+};
+
+function Arena() {
   const [players, setPlayers] = useState<Player[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.players)) return withPlayerRanks(d.players); } } catch{} return withPlayerRanks(initialPlayers); });
   const [active, setActive] = useState<'overview'|'challenge'|'teams'|'ranking'|'teacher'>('challenge');
   const [rankingView, setRankingView] = useState<'individual'|'team'>('individual');
@@ -177,7 +220,9 @@ export function Arena() {
           const remotePlayers:Player[]=profiles.map((p:any)=>{
             const s:any=byId.get(String(p.studentId))||{};
             const role=(['Học sinh','Lớp trưởng','Lớp phó học tập','Bí thư'].includes(s.classRole)?s.classRole:'Học sinh') as Role;
-            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
+            const fullName=String(s.fullName||p.studentId);
+            const fixed=OFFICIAL_ARENA_RANKS[fullName];
+            return {id:String(p.studentId),name:fullName,role,tier:fixed?.tier||(tierMap[String(p.arenaLevel)]||'Tân binh'),pos:fixed?.pos||(Number(p.rank)||1),arena:fixed?.points||(Number(p.points)||0),xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:fixed?.pos||(Number(p.rank)||undefined),shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
           });
 
           // KHÔNG thay thế dữ liệu mẫu/local bằng dữ liệu Sheet.
