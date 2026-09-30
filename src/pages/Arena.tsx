@@ -389,46 +389,35 @@ export function Arena() {
               {opponent==='manual'&&<input value={opponentInput} onChange={e=>setOpponentInput(e.target.value)} placeholder="Nhập họ và tên đối thủ" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
             <div className="md:col-span-2">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-bold text-slate-700">Loại trận</div>
-                {matchTypeOverride && <button type="button" onClick={()=>{setMatchTypeOverride('');setEditingMatchType(false)}} className="text-xs font-black text-indigo-700 hover:text-indigo-900">↩ Dùng lại tự động</button>}
-              </div>
-              <div className={`mt-2 rounded-2xl border-2 px-4 py-3.5 ${matchTypeOverride?'border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50':'border-indigo-100 bg-gradient-to-r from-indigo-50 to-violet-50'}`}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm">{matchTypeOverride?'✏️':challengeMeta.icon}</div>
-                  <div className="min-w-0 flex-1">
-                    <div className={`font-black ${matchTypeOverride?'text-amber-900':'text-indigo-900'}`}>{effectiveMatchType}</div>
-                    <div className="mt-0.5 text-xs md:text-sm font-medium text-slate-600">{matchTypeOverride?'Giáo viên đã điều chỉnh loại trận.':challengeMeta.reason}</div>
-                  </div>
-                  <span className={`rounded-full bg-white px-2.5 py-1 text-[11px] font-black shadow-sm ${matchTypeOverride?'text-amber-700':'text-indigo-700'}`}>{matchTypeOverride?'GV ĐIỀU CHỈNH':'TỰ NHẬN DIỆN'}</span>
-                  <button type="button" onClick={()=>setEditingMatchType(v=>!v)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-700 hover:border-indigo-300 hover:text-indigo-700">✏️ {editingMatchType?'Đóng':'Chỉnh loại trận'}</button>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-bold text-slate-700">Loại trận</div>
+                  <div className="mt-0.5 text-xs font-medium text-slate-500">App tự nhận diện; giáo viên có thể chọn lại trực tiếp.</div>
                 </div>
-                {editingMatchType && <div className="mt-4 border-t border-slate-200/80 pt-4">
-                  <div className="text-xs font-black uppercase tracking-wide text-slate-500">Chọn 1 trong 6 loại trận</div>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      ['⚔️','1vs1 cùng cấp','Hai học sinh trong cùng một cấp.'],
-                      ['🚀','Thách đấu vượt cấp','Học sinh thách đối thủ ở cấp cao hơn.'],
-                      ['🎖️','Thách đấu Ban cán sự','Thách đấu Lớp trưởng, Bí thư, Thủ quỹ...'],
-                      ['🛡️','Thách đấu Người giữ ải','Trận đặc biệt với Người giữ ải.'],
-                      ['🥇','Tranh Hạng 1 của cấp','Tranh vị trí Hạng 1 trong Tân binh/Đồng/Bạc/Vàng.'],
-                      ['👑','Thách đấu Champion toàn lớp','Thách đấu Champion duy nhất của toàn lớp.'],
-                    ].map(([icon,type,desc])=>{
-                      const selected = (matchTypeOverride || challengeMeta.type) === type || (type === 'Tranh Hạng 1 của cấp' && effectiveMatchType.startsWith('Tranh Hạng 1 '));
-                      return <button key={type} type="button" onClick={()=>{
-                        const chosen = type === 'Tranh Hạng 1 của cấp'
-                          ? `Tranh Hạng 1 ${players.find(p=>p.id===opponent)?.tier || players.find(p=>p.id===challenger)?.tier || 'của cấp'}`
-                          : type;
-                        setMatchTypeOverride(chosen);
-                        setEditingMatchType(false);
-                      }} className={`rounded-xl border-2 p-3 text-left transition ${selected?'border-indigo-500 bg-indigo-50 shadow-sm':'border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/50'}`}>
-                        <div className="flex items-center gap-2"><span className="text-lg">{icon}</span><span className="text-sm font-black text-slate-900">{type}</span></div>
-                        <div className="mt-1 text-xs font-medium leading-5 text-slate-500">{desc}</div>
-                      </button>
-                    })}
-                  </div>
-                  <div className="mt-3 text-xs text-slate-500">App tự nhận diện trước. Giáo viên chỉ chọn lại khi muốn điều chỉnh trận hiện tại.</div>
-                </div>}
+                <button type="button" onClick={()=>setMatchTypeOverride('')} className={`rounded-xl border px-3 py-2 text-xs font-black transition ${!matchTypeOverride?'border-indigo-300 bg-indigo-50 text-indigo-700':'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'}`}>↩ Tự nhận diện</button>
+              </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  ['⚔️','1vs1 cùng cấp','Hai học sinh trong cùng một cấp.'],
+                  ['🚀','Thách đấu vượt cấp','Học sinh thách đối thủ ở cấp cao hơn.'],
+                  ['🎖️','Thách đấu Ban cán sự','Thách đấu Lớp trưởng, Bí thư, Thủ quỹ...'],
+                  ['🛡️','Thách đấu Người giữ ải','Trận đặc biệt với Người giữ ải.'],
+                  ['🥇','Tranh Hạng 1 của cấp','Tranh Hạng 1 trong Tân binh/Đồng/Bạc/Vàng.'],
+                  ['👑','Thách đấu Champion toàn lớp','Thách đấu Champion duy nhất của toàn lớp.'],
+                ].map(([icon,type,desc])=>{
+                  const selected = effectiveMatchType === type || (type === 'Tranh Hạng 1 của cấp' && effectiveMatchType.startsWith('Tranh Hạng 1 '));
+                  return <button key={type} type="button" onClick={()=>{
+                    const chosen = type === 'Tranh Hạng 1 của cấp'
+                      ? `Tranh Hạng 1 ${players.find(p=>p.id===opponent)?.tier || players.find(p=>p.id===challenger)?.tier || 'của cấp'}`
+                      : type;
+                    setMatchTypeOverride(chosen);
+                  }} className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all duration-300 ${selected?'z-10 -translate-y-1 scale-[1.02] border-indigo-500 bg-gradient-to-br from-indigo-50 via-white to-violet-100 shadow-[0_0_0_3px_rgba(99,102,241,0.14),0_12px_30px_rgba(79,70,229,0.22)] ring-2 ring-indigo-200':'border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md'}`}>
+                    {selected && <span className="absolute right-2 top-2 rounded-full bg-indigo-600 px-2 py-1 text-[10px] font-black text-white shadow-md animate-pulse">✓ ĐANG CHỌN</span>}
+                    <div className="flex items-center gap-2 pr-20"><span className={`text-xl transition-transform duration-300 ${selected?'scale-110':''}`}>{icon}</span><span className={`text-sm font-black ${selected?'text-indigo-900':'text-slate-900'}`}>{type === 'Tranh Hạng 1 của cấp' && selected && effectiveMatchType.startsWith('Tranh Hạng 1 ') ? effectiveMatchType : type}</span></div>
+                    <div className={`mt-2 text-xs font-medium leading-5 ${selected?'text-indigo-700':'text-slate-500'}`}>{desc}</div>
+                    {selected && <div className="mt-2 text-[10px] font-black uppercase tracking-wide text-indigo-600">{matchTypeOverride?'GV ĐIỀU CHỈNH':'TỰ NHẬN DIỆN'}</div>}
+                  </button>
+                })}
               </div>
             </div>
           </div>
