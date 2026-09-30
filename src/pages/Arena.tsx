@@ -32,33 +32,44 @@ async function apiPost(action:string, data:any) {
 }
 const daysAgoIso = (days:number) => new Date(Date.now() - Math.max(0, days) * 86400000).toISOString();
 const daysHeld = (iso?:string, fallback=0) => iso ? Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000)) : fallback;
-function withPlayerRanks(list:Player[], resetChanged=false){ const order=[...list].sort((a,b)=>b.arena-a.arena); const ranks=new Map(order.map((p,i)=>[p.id,i+1])); const now=new Date().toISOString(); return list.map(p=>{ const nr=ranks.get(p.id)||1; const changed=resetChanged && p.lastRank!=null && p.lastRank!==nr; return {...p,lastRank:nr,rankSince:changed?now:(p.rankSince||daysAgoIso(p.rankDays)),rankDays:daysHeld(changed?now:(p.rankSince||daysAgoIso(p.rankDays)),p.rankDays)}; }); }
+function withPlayerRanks(list:Player[], resetChanged=false){
+  const now=new Date().toISOString();
+  const rankMap=new Map<string,number>();
+  (['Tân binh','Đồng','Bạc','Vàng'] as Tier[]).forEach(tier=>{
+    [...list].filter(p=>p.tier===tier).sort((a,b)=>b.arena-a.arena).forEach((p,i)=>rankMap.set(p.id,i+1));
+  });
+  return list.map(p=>{
+    const nr=rankMap.get(p.id)||1;
+    const changed=resetChanged && p.pos!==nr;
+    return {...p,pos:nr,lastRank:nr,rankSince:changed?now:(p.rankSince||daysAgoIso(p.rankDays)),rankDays:daysHeld(changed?now:(p.rankSince||daysAgoIso(p.rankDays)),p.rankDays)};
+  });
+}
 function withTeamRanks(list:Team[], resetChanged=false){ const order=[...list].sort((a,b)=>b.points-a.points); const ranks=new Map(order.map((t,i)=>[t.name,i+1])); const now=new Date().toISOString(); return list.map(t=>{ const nr=ranks.get(t.name)||1; const changed=resetChanged && t.lastRank!=null && t.lastRank!==nr; return {...t,lastRank:nr,rankSince:changed?now:(t.rankSince||daysAgoIso(t.rankDays)),rankDays:daysHeld(changed?now:(t.rankSince||daysAgoIso(t.rankDays)),t.rankDays)}; }); }
 
 const initialPlayers: Player[] = [
-  { id:'TUHM2424114', name:'Nguyễn Trọng Thức', role:'Học sinh', tier:'Tân binh', pos:1, arena:500, xp:0, wins:10, rankDays:1 },
-  { id:'hs02', name:'Nguyễn Thị Ngọc Ánh', role:'Học sinh', tier:'Tân binh', pos:2, arena:490, xp:0, wins:9, rankDays:1 },
-  { id:'hs03', name:'Nguyễn Đỗ Thanh Binh', role:'Học sinh', tier:'Tân binh', pos:3, arena:480, xp:0, wins:8, rankDays:1 },
-  { id:'hs04', name:'Nguyễn Thị Thanh Hương', role:'Học sinh', tier:'Tân binh', pos:4, arena:470, xp:0, wins:7, rankDays:0 },
-  { id:'hs05', name:'Nguyễn Hoàng Khang', role:'Học sinh', tier:'Tân binh', pos:5, arena:460, xp:0, wins:6, rankDays:0 },
-  { id:'hs06', name:'Nguyễn Phạm Xuân Nghi', role:'Học sinh', tier:'Tân binh', pos:6, arena:450, xp:0, wins:5, rankDays:0 },
-  { id:'hs07', name:'Nguyễn Ngọc Phương Nghi', role:'Học sinh', tier:'Tân binh', pos:7, arena:440, xp:0, wins:4, rankDays:0 },
-  { id:'hs08', name:'Nguyễn Hoàng Triều', role:'Học sinh', tier:'Tân binh', pos:8, arena:430, xp:0, wins:3, rankDays:0 },
-  { id:'hs09', name:'Nguyễn Ngô Hoàn Tuấn', role:'Học sinh', tier:'Tân binh', pos:9, arena:420, xp:0, wins:2, rankDays:0 },
-  { id:'hs10', name:'Hoàng Công Thành', role:'Học sinh', tier:'Tân binh', pos:10, arena:410, xp:0, wins:1, rankDays:0 },
-  { id:'TUHM2424134', name:'Mai Phương Uyên', role:'Học sinh', tier:'Đồng', pos:1, arena:900, xp:0, wins:10, rankDays:1 },
-  { id:'hs12', name:'Lê Việt Quốc Vương', role:'Học sinh', tier:'Đồng', pos:2, arena:890, xp:0, wins:9, rankDays:1 },
-  { id:'hs13', name:'Trần Xuân Lưu Bảo', role:'Học sinh', tier:'Đồng', pos:3, arena:880, xp:0, wins:8, rankDays:1 },
-  { id:'hs14', name:'Hoa Hoàng Quý Đô', role:'Học sinh', tier:'Đồng', pos:4, arena:870, xp:0, wins:7, rankDays:0 },
-  { id:'hs15', name:'Nguyễn Nguyên Hạo', role:'Học sinh', tier:'Đồng', pos:5, arena:860, xp:0, wins:6, rankDays:0 },
-  { id:'hs16', name:'Lê Nguyễn Ngọc Hương', role:'Học sinh', tier:'Đồng', pos:6, arena:850, xp:0, wins:5, rankDays:0 },
-  { id:'hs17', name:'Trần Ngọc Khánh Linh', role:'Học sinh', tier:'Đồng', pos:7, arena:840, xp:0, wins:4, rankDays:0 },
-  { id:'hs18', name:'Nguyễn Thành Nhơn', role:'Học sinh', tier:'Đồng', pos:8, arena:830, xp:0, wins:3, rankDays:0 },
-  { id:'hs19', name:'Ngô Duy Khoa', role:'Học sinh', tier:'Đồng', pos:9, arena:820, xp:0, wins:2, rankDays:0 },
-  { id:'hs20', name:'Đỗ Đăng Khoa', role:'Học sinh', tier:'Đồng', pos:10, arena:810, xp:0, wins:1, rankDays:0 },
-  { id:'hs21', name:'Huỳnh Nhật Quang', role:'Học sinh', tier:'Bạc', pos:1, arena:1300, xp:0, wins:10, rankDays:1 },
-  { id:'hs22', name:'Tăng Hoàng Long', role:'Học sinh', tier:'Bạc', pos:2, arena:1290, xp:0, wins:9, rankDays:1 },
-  { id:'hs23', name:'Đặng Nguyễn Kim Ngân', role:'Học sinh', tier:'Bạc', pos:3, arena:1280, xp:0, wins:8, rankDays:1 },
+  { id:'TUHM2424114', name:'Nguyễn Trọng Thức', role:'Học sinh', tier:'Tân binh', pos:1, arena:500, xp:0, wins:10, rankDays:0 },
+  { id:'HS_02', name:'Nguyễn Thị Ngọc Ánh', role:'Học sinh', tier:'Tân binh', pos:2, arena:490, xp:0, wins:9, rankDays:0 },
+  { id:'HS_03', name:'Nguyễn Đỗ Thanh Binh', role:'Học sinh', tier:'Tân binh', pos:3, arena:480, xp:0, wins:8, rankDays:0 },
+  { id:'HS_04', name:'Nguyễn Thị Thanh Hương', role:'Học sinh', tier:'Tân binh', pos:4, arena:470, xp:0, wins:7, rankDays:0 },
+  { id:'HS_05', name:'Nguyễn Hoàng Khang', role:'Học sinh', tier:'Tân binh', pos:5, arena:460, xp:0, wins:6, rankDays:0 },
+  { id:'HS_06', name:'Nguyễn Phạm Xuân Nghi', role:'Học sinh', tier:'Tân binh', pos:6, arena:450, xp:0, wins:5, rankDays:0 },
+  { id:'HS_07', name:'Nguyễn Ngọc Phương Nghi', role:'Học sinh', tier:'Tân binh', pos:7, arena:440, xp:0, wins:4, rankDays:0 },
+  { id:'HS_08', name:'Nguyễn Hoàng Triều', role:'Học sinh', tier:'Tân binh', pos:8, arena:430, xp:0, wins:3, rankDays:0 },
+  { id:'HS_09', name:'Nguyễn Ngô Hoàn Tuấn', role:'Học sinh', tier:'Tân binh', pos:9, arena:420, xp:0, wins:2, rankDays:0 },
+  { id:'HS_10', name:'Hoàng Công Thành', role:'Học sinh', tier:'Tân binh', pos:10, arena:410, xp:0, wins:1, rankDays:0 },
+  { id:'TUHM2424134', name:'Mai Phương Uyên', role:'Học sinh', tier:'Đồng', pos:1, arena:900, xp:0, wins:10, rankDays:0 },
+  { id:'HS_12', name:'Lê Việt Quốc Vương', role:'Học sinh', tier:'Đồng', pos:2, arena:890, xp:0, wins:9, rankDays:0 },
+  { id:'HS_13', name:'Trần Xuân Lưu Bảo', role:'Học sinh', tier:'Đồng', pos:3, arena:880, xp:0, wins:8, rankDays:0 },
+  { id:'HS_14', name:'Hoa Hoàng Quý Đô', role:'Học sinh', tier:'Đồng', pos:4, arena:870, xp:0, wins:7, rankDays:0 },
+  { id:'HS_15', name:'Nguyễn Nguyên Hạo', role:'Học sinh', tier:'Đồng', pos:5, arena:860, xp:0, wins:6, rankDays:0 },
+  { id:'HS_16', name:'Lê Nguyễn Ngọc Hương', role:'Học sinh', tier:'Đồng', pos:6, arena:850, xp:0, wins:5, rankDays:0 },
+  { id:'HS_17', name:'Trần Ngọc Khánh Linh', role:'Học sinh', tier:'Đồng', pos:7, arena:840, xp:0, wins:4, rankDays:0 },
+  { id:'HS_18', name:'Nguyễn Thành Nhơn', role:'Học sinh', tier:'Đồng', pos:8, arena:830, xp:0, wins:3, rankDays:0 },
+  { id:'HS_19', name:'Ngô Duy Khoa', role:'Học sinh', tier:'Đồng', pos:9, arena:820, xp:0, wins:2, rankDays:0 },
+  { id:'HS_20', name:'Đỗ Đăng Khoa', role:'Học sinh', tier:'Đồng', pos:10, arena:810, xp:0, wins:1, rankDays:0 },
+  { id:'HS_21', name:'Huỳnh Nhật Quang', role:'Học sinh', tier:'Bạc', pos:1, arena:1300, xp:0, wins:10, rankDays:0 },
+  { id:'HS_22', name:'Tăng Hoàng Long', role:'Học sinh', tier:'Bạc', pos:2, arena:1290, xp:0, wins:9, rankDays:0 },
+  { id:'HS_23', name:'Đặng Nguyễn Kim Ngân', role:'Học sinh', tier:'Bạc', pos:3, arena:1280, xp:0, wins:8, rankDays:0 },
   { id:'TUHM2424076', name:'Nguyễn Trung Bảo', role:'Học sinh', tier:'Bạc', pos:4, arena:1270, xp:0, wins:7, rankDays:0 },
   { id:'TUHM2424077', name:'Phạm Gia Bảo', role:'Học sinh', tier:'Bạc', pos:5, arena:1260, xp:0, wins:6, rankDays:0 },
   { id:'TUHM2424078', name:'Nguyễn Tấn Đạt', role:'Học sinh', tier:'Bạc', pos:6, arena:1250, xp:0, wins:5, rankDays:0 },
@@ -66,16 +77,16 @@ const initialPlayers: Player[] = [
   { id:'TUHM2424085', name:'Trần Hữu Thành', role:'Học sinh', tier:'Bạc', pos:8, arena:1230, xp:0, wins:3, rankDays:0 },
   { id:'TUHM2424086', name:'Tô Quốc Thịnh', role:'Học sinh', tier:'Bạc', pos:9, arena:1220, xp:0, wins:2, rankDays:0 },
   { id:'TUHM2424087', name:'Nguyễn Xuân Trúc', role:'Học sinh', tier:'Bạc', pos:10, arena:1210, xp:0, wins:1, rankDays:0 },
-  { id:'hs31', name:'Ngô Ngọc Lam', role:'Học sinh', tier:'Vàng', pos:1, arena:1700, xp:0, wins:10, rankDays:1 },
-  { id:'TUHM2424093', name:'Nguyễn Huyền Diệu', role:'Học sinh', tier:'Vàng', pos:2, arena:1690, xp:0, wins:9, rankDays:1 },
-  { id:'TUHM2424098', name:'Lê Nguyễn Quốc Duy', role:'Học sinh', tier:'Vàng', pos:3, arena:1680, xp:0, wins:8, rankDays:1 },
+  { id:'HS_31', name:'Ngô Ngọc Lam', role:'Học sinh', tier:'Vàng', pos:1, arena:1700, xp:0, wins:10, rankDays:0 },
+  { id:'TUHM2424093', name:'Nguyễn Huyền Diệu', role:'Học sinh', tier:'Vàng', pos:2, arena:1690, xp:0, wins:9, rankDays:0 },
+  { id:'TUHM2424098', name:'Lê Nguyễn Quốc Duy', role:'Học sinh', tier:'Vàng', pos:3, arena:1680, xp:0, wins:8, rankDays:0 },
   { id:'TUHM2424105', name:'Thân Nguyễn Quốc Bảo', role:'Học sinh', tier:'Vàng', pos:4, arena:1670, xp:0, wins:7, rankDays:0 },
   { id:'TUHM2424116', name:'Phùng Trần Thanh Trúc', role:'Học sinh', tier:'Vàng', pos:5, arena:1660, xp:0, wins:6, rankDays:0 },
   { id:'TUHM2424118', name:'Nguyễn Huỳnh Hải Vy', role:'Học sinh', tier:'Vàng', pos:6, arena:1650, xp:0, wins:5, rankDays:0 },
   { id:'TUHM2424120', name:'Lê Huỳnh Hương Y', role:'Học sinh', tier:'Vàng', pos:7, arena:1640, xp:0, wins:4, rankDays:0 },
   { id:'TUHM2424130', name:'Trần Tấn Tài', role:'Học sinh', tier:'Vàng', pos:8, arena:1630, xp:0, wins:3, rankDays:0 },
-  { id:'hs39', name:'Nguyễn Tấn Lộc', role:'Học sinh', tier:'Vàng', pos:9, arena:1620, xp:0, wins:2, rankDays:0 },
-  { id:'hs40', name:'Huỳnh Thị Như Hoàng', role:'Học sinh', tier:'Vàng', pos:10, arena:1610, xp:0, wins:1, rankDays:0 },
+  { id:'HS_39', name:'Nguyễn Tấn Lộc', role:'Học sinh', tier:'Vàng', pos:9, arena:1620, xp:0, wins:2, rankDays:0 },
+  { id:'HS_40', name:'Huỳnh Thị Như Hoàng', role:'Học sinh', tier:'Vàng', pos:10, arena:1610, xp:0, wins:1, rankDays:0 },
 ];
 
 const tierStyle: Record<Tier,string> = {
@@ -150,7 +161,7 @@ export function Arena() {
       const saved:Player[]=Array.isArray(d?.players)?d.players:[];
       return withPlayerRanks(initialPlayers.map(base=>{
         const s=saved.find(p=>p.name?.trim().toLocaleLowerCase('vi')===base.name.trim().toLocaleLowerCase('vi'));
-        return s ? {...s,...base,wins:s.wins??base.wins,rankDays:s.rankDays??base.rankDays} : base;
+        return s ? {...base,wins:s.wins??base.wins,rankDays:s.rankDays??base.rankDays,shield:s.shield,placement:s.placement,guardian:s.guardian} : base;
       }));
     } catch { return withPlayerRanks(initialPlayers); }
   });
@@ -160,8 +171,8 @@ export function Arena() {
     {name:'Tổ 3', points:270, wins:4, relay:1, rankDays:3},
     {name:'Tổ 4', points:245, wins:3, relay:0, rankDays:2},
   ]); });
-  const [challenger, setChallenger] = useState('p6');
-  const [opponent, setOpponent] = useState('p4');
+  const [challenger, setChallenger] = useState('TUHM2424114');
+  const [opponent, setOpponent] = useState('TUHM2424134');
   const [challengerInput, setChallengerInput] = useState('');
   const [opponentInput, setOpponentInput] = useState('');
   const [tickets, setTickets] = useState(3);
@@ -196,6 +207,9 @@ export function Arena() {
     { q:'Đạo hàm của hàm số $y=x^3-2x$ là:', options:["$y'=3x^2-2$","$y'=x^2-2$","$y'=3x-2$","$y'=3x^2$"], correct:'A' },
   ];
   const sorted = useMemo(() => [...players].sort((a,b) => b.arena-a.arena), [players]);
+  const officialByName = useMemo(() => new Map(initialPlayers.map(p=>[p.name.trim().toLocaleLowerCase('vi'),p])), []);
+  const displayPlayer = (p:Player) => officialByName.get(p.name.trim().toLocaleLowerCase('vi')) || p;
+
 
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({schemaVersion:STORAGE_SCHEMA,players,teams,history,savedAt:new Date().toISOString()})); } catch{} }, [players,teams,history]);
 
@@ -406,17 +420,18 @@ export function Arena() {
           <div className="flex items-start justify-between gap-4">
             <div><h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><Swords className="text-indigo-600"/> Tạo thách đấu</h2><p className="text-sm text-slate-500 mt-1">Học sinh chọn người muốn thách đấu; giáo viên xác nhận và cho vào trận ngay.</p></div>
             <div className="px-3 py-2 rounded-xl bg-amber-50 text-amber-700 font-black text-sm flex items-center gap-2"><Ticket size={17}/> {tickets} vé</div>
+            <div className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">FIX 4 CẤP • 30/09 18:11</div>
           </div>
           <div className="grid md:grid-cols-2 gap-4 mt-6">
             <label className="text-sm font-bold text-slate-700">Người thách đấu
               <select value={challenger} onChange={e=>setChallenger(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">
-                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
+                {players.map(p=>{const d=displayPlayer(p);return <option key={p.id} value={p.id}>{p.name} • {d.tier} #{d.pos}</option>})}<option value="manual">＋ Nhập tên học sinh khác</option>
               </select>
               {challenger==='manual'&&<input value={challengerInput} onChange={e=>setChallengerInput(e.target.value)} placeholder="Nhập họ và tên học sinh" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
             <label className="text-sm font-bold text-slate-700">Đối thủ
               <select value={opponent} onChange={e=>setOpponent(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200">
-                {players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.tier} #{p.pos}</option>)}<option value="manual">＋ Nhập tên học sinh khác</option>
+                {players.map(p=>{const d=displayPlayer(p);return <option key={p.id} value={p.id}>{p.name} • {d.tier} #{d.pos}</option>})}<option value="manual">＋ Nhập tên học sinh khác</option>
               </select>
               {opponent==='manual'&&<input value={opponentInput} onChange={e=>setOpponentInput(e.target.value)} placeholder="Nhập họ và tên đối thủ" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
