@@ -143,7 +143,24 @@ function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent, arena
 }
 
 export function Arena() {
-  const [players, setPlayers] = useState<Player[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.players)) return withPlayerRanks(d.players); } } catch{} return withPlayerRanks(initialPlayers); });
+  const [players, setPlayers] = useState<Player[]>(() => {
+    // Luôn dựng lại roster từ 40 HS chính thức, rồi chỉ khôi phục thành tích của đúng các em này.
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      const d = raw ? JSON.parse(raw) : null;
+      const saved: Player[] = Array.isArray(d?.players) ? d.players : [];
+      const merged = initialPlayers.map(base => {
+        const old = saved.find(p =>
+          p.id === base.id ||
+          p.name?.trim().toLocaleLowerCase('vi') === base.name.trim().toLocaleLowerCase('vi')
+        );
+        return old ? { ...base, ...old, id: base.id, name: base.name } : base;
+      });
+      return withPlayerRanks(merged);
+    } catch {
+      return withPlayerRanks(initialPlayers);
+    }
+  });
   const [active, setActive] = useState<'overview'|'challenge'|'teams'|'ranking'|'teacher'>('challenge');
   const [rankingView, setRankingView] = useState<'individual'|'team'>('individual');
   const [teamMode, setTeamMode] = useState<'Đấu tổ'|'Tiếp sức'>('Đấu tổ');
@@ -212,22 +229,24 @@ export function Arena() {
             return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
           });
 
-          // KHÔNG thay thế dữ liệu mẫu/local bằng dữ liệu Sheet.
-          // Gộp hai nguồn: giữ nguyên danh sách đang có và chỉ thêm/cập nhật học sinh thật từ Google Sheet.
+          // Google Sheet chỉ cập nhật thành tích cho roster 40 HS chính thức.
+          // Không append dữ liệu mẫu cũ hoặc học sinh đã loại.
           setPlayers(current=>{
             const merged=[...current];
             for(const rp of remotePlayers){
-              const idx=merged.findIndex(p=>p.id===rp.id);
-              if(idx>=0) merged[idx]={...merged[idx],...rp};
-              else {
-                const sameName=merged.findIndex(p=>p.name.trim().toLocaleLowerCase('vi')===rp.name.trim().toLocaleLowerCase('vi'));
-                if(sameName>=0) merged[sameName]={...merged[sameName],...rp};
-                else merged.push(rp);
-              }
+              const idx=merged.findIndex(p =>
+                p.id===rp.id ||
+                p.name.trim().toLocaleLowerCase('vi')===rp.name.trim().toLocaleLowerCase('vi')
+              );
+              if(idx>=0) merged[idx]={...merged[idx],...rp,id:merged[idx].id,name:merged[idx].name};
             }
             return withPlayerRanks(merged);
           });
-          if(remotePlayers[0]) setScoreStudentId(remotePlayers[0].id);
+          const firstOfficialRemote=remotePlayers.find(rp=>initialPlayers.some(p=>p.name.trim().toLocaleLowerCase('vi')===rp.name.trim().toLocaleLowerCase('vi')));
+          if(firstOfficialRemote) {
+            const local=initialPlayers.find(p=>p.name.trim().toLocaleLowerCase('vi')===firstOfficialRemote.name.trim().toLocaleLowerCase('vi'));
+            if(local) setScoreStudentId(local.id);
+          }
         }
         setCloudStatus('online');
       } catch(err){ console.error(err); if(!cancelled)setCloudStatus('offline'); }
