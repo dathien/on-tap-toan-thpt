@@ -389,37 +389,47 @@ export function Arena() {
               {opponent==='manual'&&<input value={opponentInput} onChange={e=>setOpponentInput(e.target.value)} placeholder="Nhập họ và tên đối thủ" className="mt-2 w-full rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-3 outline-none focus:ring-2 focus:ring-indigo-200"/>}
             </label>
             <div className="md:col-span-2">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-sm font-bold text-slate-700">Loại trận</div>
-                  <div className="mt-0.5 text-xs font-medium text-slate-500">App tự nhận diện; giáo viên có thể chọn lại trực tiếp.</div>
+                  <div className="text-sm font-black text-slate-800">Loại trận</div>
+                  <div className="mt-0.5 text-xs font-medium text-slate-500">Chọn nhanh một hình thức thi đấu.</div>
                 </div>
-                <button type="button" onClick={()=>setMatchTypeOverride('')} className={`rounded-xl border px-3 py-2 text-xs font-black transition ${!matchTypeOverride?'border-indigo-300 bg-indigo-50 text-indigo-700':'border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-700'}`}>↩ Tự nhận diện</button>
+                <button type="button" onClick={()=>setMatchTypeOverride('')} className={`rounded-lg border px-3 py-1.5 text-[11px] font-black transition ${!matchTypeOverride?'border-indigo-400 bg-indigo-50 text-indigo-700 shadow-sm':'border-slate-200 bg-white text-slate-500 hover:border-indigo-300 hover:text-indigo-700'}`}>↩ Tự nhận diện</button>
               </div>
-              <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3">
                 {[
                   ['⚔️','1vs1 cùng cấp','Hai học sinh cùng cấp.'],
-                  ['🚀','Thách đấu vượt cấp','Thách đối thủ ở cấp cao hơn.'],
-                  ['🎖️','Thách đấu Ban cán sự','Thách Lớp trưởng, Bí thư, Thủ quỹ...'],
-                  ['🛡️','Thách đấu Người giữ ải','Trận đặc biệt với Người giữ ải.'],
-                  ['🥇','Tranh Hạng 1','Tranh vị trí Hạng 1 của cấp hiện tại.'],
-                  ['👑','Thách đấu Champion','Thách Champion duy nhất toàn lớp.'],
-                ].map(([icon,type,desc])=>{
-                  const selected = effectiveMatchType === type || (type === 'Tranh Hạng 1' && effectiveMatchType.startsWith('Tranh Hạng 1 ')) || (type === 'Thách đấu Champion' && effectiveMatchType === 'Thách đấu Champion toàn lớp');
-                  return <button key={type} type="button" onClick={()=>{
-                    const chosen = type === 'Tranh Hạng 1'
+                  ['🚀','Vượt cấp','Thách đấu đối thủ cấp cao hơn.'],
+                  ['🎖️','Ban cán sự','Thách đấu cán sự lớp.'],
+                  ['🛡️','Người giữ ải','Trận đặc biệt vượt ải.'],
+                  ['🥇','Tranh Hạng 1','Tranh vị trí Hạng 1 của cấp.'],
+                  ['👑','Champion','Thách đấu Champion toàn lớp.'],
+                ].map(([icon,label,desc])=>{
+                  const type = label==='Vượt cấp' ? 'Thách đấu vượt cấp' : label==='Ban cán sự' ? 'Thách đấu Ban cán sự' : label==='Người giữ ải' ? 'Thách đấu Người giữ ải' : label==='Champion' ? 'Thách đấu Champion toàn lớp' : label==='Tranh Hạng 1' ? 'Tranh Hạng 1 của cấp' : label;
+                  const selected = effectiveMatchType === type || (label === 'Tranh Hạng 1' && effectiveMatchType.startsWith('Tranh Hạng 1 '));
+                  return <button key={label} type="button" onClick={()=>{
+                    const chosen = label === 'Tranh Hạng 1'
                       ? `Tranh Hạng 1 ${players.find(p=>p.id===opponent)?.tier || players.find(p=>p.id===challenger)?.tier || 'của cấp'}`
-                      : type === 'Thách đấu Champion' ? 'Thách đấu Champion toàn lớp' : type;
+                      : type;
                     setMatchTypeOverride(chosen);
-                  }} className={`relative overflow-hidden rounded-2xl border-2 p-4 text-left transition-all duration-300 ${selected?'z-10 -translate-y-1 scale-[1.02] border-indigo-500 bg-gradient-to-br from-indigo-50 via-white to-violet-100 shadow-[0_0_0_3px_rgba(99,102,241,0.14),0_12px_30px_rgba(79,70,229,0.22)] ring-2 ring-indigo-200':'border-slate-200 bg-white shadow-sm hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md'}`}>
-                    <div className="flex min-h-[116px] flex-col items-center justify-center px-2 py-1 text-center">
-                      <span className={`text-3xl leading-none transition-transform duration-300 ${selected?'scale-110':''}`}>{icon}</span>
-                      <div className={`mt-3 text-[15px] font-black leading-5 ${selected?'text-indigo-900':'text-slate-900'}`}>{type}</div>
-                      <div className={`mt-2 text-xs font-medium leading-5 ${selected?'text-indigo-700':'text-slate-500'}`}>{desc}</div>
-                      {selected && <div className="mt-3 inline-flex items-center rounded-full bg-indigo-600 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow-md animate-pulse">✓ {matchTypeOverride?'GV ĐIỀU CHỈNH':'ĐANG CHỌN · TỰ NHẬN DIỆN'}</div>}
+                  }} className={`group relative min-h-[68px] rounded-xl border px-3 py-2.5 text-left transition-all duration-200 ${selected?'z-10 -translate-y-0.5 border-indigo-500 bg-gradient-to-br from-indigo-50 to-violet-50 shadow-[0_6px_18px_rgba(79,70,229,0.18)] ring-2 ring-indigo-100':'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-sm'}`}>
+                    {selected && <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600 text-[11px] font-black text-white shadow">✓</span>}
+                    <div className="flex items-center gap-2 pr-6">
+                      <span className={`text-lg leading-none ${selected?'scale-110':''}`}>{icon}</span>
+                      <span className={`text-[13px] font-black leading-4 ${selected?'text-indigo-900':'text-slate-800'}`}>{label}</span>
                     </div>
+                    <div className={`mt-1 pl-7 text-[10px] font-semibold leading-4 ${selected?'text-indigo-600':'text-slate-400'}`}>{desc}</div>
                   </button>
                 })}
+              </div>
+              <div className={`mt-3 rounded-xl border px-3 py-2.5 ${matchTypeOverride?'border-amber-200 bg-amber-50':'border-indigo-100 bg-indigo-50/70'}`}>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className={`rounded-md px-2 py-0.5 text-[10px] font-black uppercase tracking-wide ${matchTypeOverride?'bg-amber-100 text-amber-700':'bg-indigo-100 text-indigo-700'}`}>{matchTypeOverride?'GV điều chỉnh':'Tự nhận diện'}</span>
+                  <span className="text-xs font-black text-slate-800">{effectiveMatchType}</span>
+                </div>
+                <div className="mt-1 text-[11px] font-medium leading-4 text-slate-500">
+                  {effectiveMatchType.startsWith('Tranh Hạng 1 ') ? 'Tranh vị trí Hạng 1 trong đúng cấp hiện tại; không phải Champion toàn lớp.' : effectiveMatchType==='Thách đấu Champion toàn lớp' ? 'Trận đặc biệt với Champion duy nhất của toàn lớp.' : effectiveMatchType==='Thách đấu vượt cấp' ? 'Học sinh thách đấu đối thủ ở cấp cao hơn.' : effectiveMatchType==='Thách đấu Ban cán sự' ? 'Kênh thách đấu riêng với Ban cán sự lớp.' : effectiveMatchType==='Thách đấu Người giữ ải' ? 'Trận đặc biệt với Người giữ ải.' : effectiveMatchType==='1vs1 cùng cấp' ? 'Hai học sinh thi đấu trong cùng một cấp.' : 'Giáo viên chủ động chọn hình thức thi đấu.'}
+                </div>
               </div>
             </div>
           </div>
