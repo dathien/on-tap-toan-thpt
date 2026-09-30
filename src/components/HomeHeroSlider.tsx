@@ -91,13 +91,13 @@ export function HomeHeroSlider() {
           animate={{ opacity: 1, x: 0 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -34 }}
           transition={{ duration: 0.45, ease: 'easeOut' }}
-          className="relative grid min-h-[330px] grid-cols-1 items-center gap-8 px-7 py-8 md:grid-cols-[1.15fr_.85fr] md:px-12 md:py-10"
+          className="relative grid min-h-[350px] grid-cols-1 items-center gap-6 px-7 pb-16 pt-8 md:grid-cols-[minmax(0,1.08fr)_minmax(300px,.92fr)] md:gap-10 md:px-[88px] md:pb-16 md:pt-10 lg:px-[96px]"
         >
-          <div className="z-10 max-w-2xl">
+          <div className="z-10 min-w-0 max-w-[610px]">
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/75 px-4 py-2 text-xs font-extrabold tracking-[0.14em] text-slate-700 shadow-sm backdrop-blur">
               <Sparkles size={15} className="text-indigo-600" /> {slide.eyebrow}
             </div>
-            <h2 className="text-[30px] font-black leading-[1.12] text-[#172033] md:text-[42px]">{slide.title}</h2>
+            <h2 className="max-w-[600px] text-[30px] font-black leading-[1.12] text-[#172033] md:text-[38px] lg:text-[40px]">{slide.title}</h2>
             <p className="mt-4 max-w-xl text-base leading-7 text-slate-600 md:text-lg">{slide.desc}</p>
             <div className="mt-6 flex flex-wrap gap-2">
               {slide.chips.map(chip => <span key={chip} className="rounded-full bg-white/80 px-3 py-1.5 text-sm font-bold text-slate-700 shadow-sm">{chip}</span>)}
@@ -107,7 +107,7 @@ export function HomeHeroSlider() {
             </button>
           </div>
 
-          <div className="relative mx-auto flex h-[220px] w-full max-w-[390px] items-center justify-center md:h-[260px]">
+          <div className="relative mx-auto flex h-[210px] w-full max-w-[360px] items-center justify-center md:h-[250px]">
             <motion.div
               animate={reduceMotion ? undefined : { y: [0, -8, 0], rotate: [-1.5, 1.5, -1.5] }}
               transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
@@ -125,8 +125,8 @@ export function HomeHeroSlider() {
         </motion.div>
       </AnimatePresence>
 
-      <button onClick={() => go(-1)} aria-label="Slide trước" className="hero-arrow absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/85 text-slate-700 shadow-md backdrop-blur transition hover:scale-105 hover:bg-white md:left-5"><ChevronLeft size={24} /></button>
-      <button onClick={() => go(1)} aria-label="Slide sau" className="hero-arrow absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/80 bg-white/85 text-slate-700 shadow-md backdrop-blur transition hover:scale-105 hover:bg-white md:right-5"><ChevronRight size={24} /></button>
+      <button onClick={() => go(-1)} aria-label="Slide trước" className="hero-arrow absolute bottom-4 left-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-md backdrop-blur transition hover:scale-105 hover:bg-white md:bottom-auto md:left-5 md:top-1/2 md:-translate-y-1/2"><ChevronLeft size={24} /></button>
+      <button onClick={() => go(1)} aria-label="Slide sau" className="hero-arrow absolute bottom-4 right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full border border-white/80 bg-white/90 text-slate-700 shadow-md backdrop-blur transition hover:scale-105 hover:bg-white md:bottom-auto md:right-5 md:top-1/2 md:-translate-y-1/2"><ChevronRight size={24} /></button>
 
       <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2 rounded-full bg-white/70 px-3 py-2 shadow-sm backdrop-blur">
         {slides.map((_, i) => (
