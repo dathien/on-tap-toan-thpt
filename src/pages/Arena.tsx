@@ -6,7 +6,7 @@ import { MathText } from '../components/MathText';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
-type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; rankDays:number; rankSince?:string; lastRank?:number; shield?:number; placement?:number; guardian?:string; };
+type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; losses?:number; matchesPlayed?:number; rankDays:number; rankSince?:string; lastRank?:number; shield?:number; placement?:number; guardian?:string; };
 type Team = { name:string; points:number; wins:number; relay:number; rankDays:number; rankSince?:string; lastRank?:number };
 const STORAGE_KEY = 'mathArenaData';
 const STORAGE_SCHEMA = 1;
@@ -177,7 +177,7 @@ export function Arena() {
           const remotePlayers:Player[]=profiles.map((p:any)=>{
             const s:any=byId.get(String(p.studentId))||{};
             const role=(['Học sinh','Lớp trưởng','Lớp phó học tập','Bí thư'].includes(s.classRole)?s.classRole:'Học sinh') as Role;
-            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
+            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,losses:Number(p.losses)||0,matchesPlayed:Number(p.matchesPlayed)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
           });
 
           // Google Sheet là nguồn dữ liệu chính thức của Đấu trường.
@@ -292,10 +292,47 @@ export function Arena() {
     const playerA=players.find(p=>p.name===battle.a);
     const playerB=players.find(p=>p.name===battle.b);
     const winner=finalA===finalB?undefined:(finalA>finalB?playerA:playerB);
-    if(winner){
-      setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===winner.id?{...p,wins:(p.wins||0)+1}:p),false));
+    const loser=finalA===finalB?undefined:(finalA>finalB?playerB:playerA);
+
+    // Luật nền tảng: trận cùng cấp dùng cơ chế ladder.
+    // Học sinh hạng thấp thắng học sinh hạng cao -> vượt lên vị trí của đối thủ;
+    // các vị trí trong cùng cấp được tính lại theo Arena. Nếu hạng cao thắng hạng thấp,
+    // thứ hạng không đảo nhưng người thắng vẫn nhận +10 Arena.
+    let arenaDeltaForWinner = 0;
+    let nextPlayers = players;
+    if (winner && loser) {
+      const sameTier = winner.tier === loser.tier;
+      const isSameTierRule = sameTier && (battle.mode === '1vs1 cùng cấp' || battle.mode.startsWith('Tranh Hạng 1'));
+      arenaDeltaForWinner = 10;
+      if (isSameTierRule && winner.pos > loser.pos) {
+        arenaDeltaForWinner = Math.max(10, loser.arena + 1 - winner.arena);
+      }
+      const now = new Date().toISOString();
+      const updated = players.map(p => {
+        if (p.id === winner.id) return {...p, arena:p.arena+arenaDeltaForWinner, wins:(p.wins||0)+1, matchesPlayed:(p.matchesPlayed||0)+1};
+        if (p.id === loser.id) return {...p, losses:(p.losses||0)+1, matchesPlayed:(p.matchesPlayed||0)+1};
+        return p;
+      });
+      if (isSameTierRule) {
+        const tierSorted = updated.filter(p=>p.tier===winner.tier).sort((a,b)=>b.arena-a.arena || a.pos-b.pos);
+        const rankMap = new Map(tierSorted.map((p,i)=>[p.id,i+1]));
+        nextPlayers = updated.map(p=>{
+          if(p.tier!==winner.tier) return p;
+          const newPos=rankMap.get(p.id)||p.pos;
+          return {...p,pos:newPos,rankSince:newPos!==p.pos?now:p.rankSince,rankDays:newPos!==p.pos?0:p.rankDays};
+        });
+      } else {
+        nextPlayers = updated;
+      }
+      setPlayers(nextPlayers);
+    } else if (finalA===finalB && playerA && playerB) {
+      nextPlayers = players.map(p => (p.id===playerA.id || p.id===playerB.id) ? {...p,matchesPlayed:(p.matchesPlayed||0)+1} : p);
+      setPlayers(nextPlayers);
     }
-    const localMatch={id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:new Date().toLocaleString('vi-VN')};
+
+    const rankChange = winner && loser && winner.tier===loser.tier && winner.pos>loser.pos && (battle.mode==='1vs1 cùng cấp' || battle.mode.startsWith('Tranh Hạng 1'));
+    const winnerAfter = winner ? nextPlayers.find(p=>p.id===winner.id) : undefined;
+    const localMatch={id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:winner?`+${arenaDeltaForWinner} Arena`:'Hòa',time:new Date().toLocaleString('vi-VN')};
     setHistory(h=>[localMatch,...h]);
     try {
       await apiPost('saveMatch',{
@@ -316,11 +353,16 @@ export function Arena() {
         status:'COMPLETED',
         createdBy:'TEACHER'
       });
+      if (winner && arenaDeltaForWinner>0) {
+        await apiPost('adjustPoints',{studentId:winner.id,changePoints:arenaDeltaForWinner,reason:`Kết quả ${battle.mode}: ${winner.name} thắng`,createdBy:'ARENA'});
+      }
       setCloudStatus('online');
-      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB} • đã lưu Google Sheet`);
+      const rankText=rankChange&&winnerAfter?` • ${winner.name} lên Hạng ${winnerAfter.pos} ${winnerAfter.tier}`:'';
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText} • +${arenaDeltaForWinner||0} Arena • đã lưu Google Sheet`);
     } catch(err){
       console.error(err); setCloudStatus('offline');
-      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB} • đã lưu trên máy, chưa đồng bộ Google Sheet`);
+      const rankText=rankChange&&winnerAfter?` • ${winner.name} lên Hạng ${winnerAfter.pos} ${winnerAfter.tier}`:'';
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText} • đã lưu trên máy, chưa đồng bộ Google Sheet`);
     }
     setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({});
   };
