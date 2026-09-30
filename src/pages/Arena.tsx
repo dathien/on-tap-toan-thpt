@@ -180,22 +180,22 @@ export function Arena() {
             return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
           });
 
-          // KHÔNG thay thế dữ liệu mẫu/local bằng dữ liệu Sheet.
-          // Gộp hai nguồn: giữ nguyên danh sách đang có và chỉ thêm/cập nhật học sinh thật từ Google Sheet.
-          setPlayers(current=>{
-            const merged=[...current];
-            for(const rp of remotePlayers){
-              const idx=merged.findIndex(p=>p.id===rp.id);
-              if(idx>=0) merged[idx]={...merged[idx],...rp};
-              else {
-                const sameName=merged.findIndex(p=>p.name.trim().toLocaleLowerCase('vi')===rp.name.trim().toLocaleLowerCase('vi'));
-                if(sameName>=0) merged[sameName]={...merged[sameName],...rp};
-                else merged.push(rp);
-              }
-            }
-            return withPlayerRanks(merged);
-          });
-          if(remotePlayers[0]) setScoreStudentId(remotePlayers[0].id);
+          // Google Sheet là nguồn dữ liệu chính thức của Đấu trường.
+          // Khi Sheet có đủ danh sách, thay toàn bộ dữ liệu mẫu/local để không còn trùng học sinh hoặc mã cũ.
+          const officialPlayers = remotePlayers
+            .filter(p => /^HS\d{3}$/.test(p.id))
+            .sort((a,b) => {
+              const ta=tierOrder.indexOf(a.tier), tb=tierOrder.indexOf(b.tier);
+              return ta===tb ? a.pos-b.pos : ta-tb;
+            });
+          if (officialPlayers.length > 0) {
+            setPlayers(officialPlayers);
+            const first=officialPlayers[0];
+            const second=officialPlayers[1] || first;
+            setChallenger(first.id);
+            setOpponent(second.id);
+            setScoreStudentId(first.id);
+          }
         }
         setCloudStatus('online');
       } catch(err){ console.error(err); if(!cancelled)setCloudStatus('offline'); }
