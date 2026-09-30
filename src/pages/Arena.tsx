@@ -1,21 +1,22 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import * as THREE from 'three';
 import { motion } from 'motion/react';
 import { Crown, Shield, Swords, Users, Trophy, Zap, LockKeyhole, Medal, Flag, Route, ChevronRight, Sparkles, RotateCcw, Ticket, History, Target, CheckCircle2, Play, ArrowRight, Clock3 } from 'lucide-react';
 import { MathText } from '../components/MathText';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
-type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; shield?:number; placement?:number; guardian?:string; };
+type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; rankDays:number; shield?:number; placement?:number; guardian?:string; };
 
 const initialPlayers: Player[] = [
-  { id:'p1', name:'Minh', role:'Học sinh', tier:'Vàng', pos:1, arena:1380, xp:3250 },
-  { id:'p2', name:'Lan', role:'Lớp phó học tập', tier:'Vàng', pos:2, arena:1340, xp:3010 },
-  { id:'p3', name:'Hùng', role:'Học sinh', tier:'Vàng', pos:3, arena:1315, xp:2960, guardian:'Cổng Top' },
-  { id:'p4', name:'Bình', role:'Lớp trưởng', tier:'Bạc', pos:1, arena:1120, xp:2680, guardian:'Ải Bạc' },
-  { id:'p5', name:'Mai', role:'Học sinh', tier:'Bạc', pos:2, arena:1085, xp:2440 },
-  { id:'p6', name:'An', role:'Học sinh', tier:'Đồng', pos:1, arena:920, xp:2210, shield:1, placement:3 },
-  { id:'p7', name:'Nam', role:'Bí thư', tier:'Đồng', pos:2, arena:885, xp:2040 },
-  { id:'p8', name:'Phúc', role:'Học sinh', tier:'Đồng', pos:3, arena:850, xp:1950 },
+  { id:'p1', name:'Minh', role:'Học sinh', tier:'Vàng', pos:1, arena:1380, xp:3250, wins:12, rankDays:2 },
+  { id:'p2', name:'Lan', role:'Lớp phó học tập', tier:'Vàng', pos:2, arena:1340, xp:3010, wins:10, rankDays:4 },
+  { id:'p3', name:'Hùng', role:'Học sinh', tier:'Vàng', pos:3, arena:1315, xp:2960, wins:9, rankDays:3, guardian:'Cổng Top' },
+  { id:'p4', name:'Bình', role:'Lớp trưởng', tier:'Bạc', pos:1, arena:1120, xp:2680, wins:8, rankDays:6, guardian:'Ải Bạc' },
+  { id:'p5', name:'Mai', role:'Học sinh', tier:'Bạc', pos:2, arena:1085, xp:2440, wins:7, rankDays:5 },
+  { id:'p6', name:'An', role:'Học sinh', tier:'Đồng', pos:1, arena:920, xp:2210, wins:6, rankDays:5, shield:1, placement:3 },
+  { id:'p7', name:'Nam', role:'Bí thư', tier:'Đồng', pos:2, arena:885, xp:2040, wins:5, rankDays:7 },
+  { id:'p8', name:'Phúc', role:'Học sinh', tier:'Đồng', pos:3, arena:850, xp:1950, wins:4, rankDays:3 },
 ];
 
 const tierStyle: Record<Tier,string> = {
@@ -34,6 +35,43 @@ const modes = [
   { icon:Users, title:'Đấu tổ & Tiếp sức', desc:'4 tổ công thành, giữ thành hoặc giải nối tiếp từng chặng.', tag:'Đồng đội' },
 ];
 
+function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent }:{leftName:string;rightName:string;leftScore:number;rightScore:number;urgent:boolean}) {
+  const mountRef = useRef<HTMLDivElement | null>(null);
+  const [webglOk, setWebglOk] = useState(true);
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+    let renderer: THREE.WebGLRenderer;
+    try { renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true }); } catch { setWebglOk(false); return; }
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x080b24, 9, 28);
+    const camera = new THREE.PerspectiveCamera(48, 1, .1, 100);
+    camera.position.set(0, 7.2, 12.5); camera.lookAt(0, .4, 0);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
+    renderer.setClearColor(0x05071a, 1);
+    mount.appendChild(renderer.domElement);
+    const hemi = new THREE.HemisphereLight(0x9cc9ff, 0x160b2d, 2.2); scene.add(hemi);
+    const key = new THREE.PointLight(0x6ee7ff, 24, 22); key.position.set(-5,5,5); scene.add(key);
+    const rim = new THREE.PointLight(0xc44cff, 28, 22); rim.position.set(5,4,3); scene.add(rim);
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(7.6,8.4,.55,64), new THREE.MeshStandardMaterial({color:0x11183b,metalness:.75,roughness:.28})); floor.position.y=-.55; scene.add(floor);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(6.7,.12,16,96), new THREE.MeshStandardMaterial({color:0x8b5cf6,emissive:0x5b21b6,emissiveIntensity:2})); ring.rotation.x=Math.PI/2; ring.position.y=-.2; scene.add(ring);
+    const grid = new THREE.GridHelper(13,18,0x22d3ee,0x29305e); grid.position.y=-.22; scene.add(grid);
+    const makePod=(x:number,color:number)=>{ const g=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(2.15,2.45,.7,48),new THREE.MeshStandardMaterial({color,metalness:.65,roughness:.3,emissive:color,emissiveIntensity:.18})); g.add(base); const halo=new THREE.Mesh(new THREE.TorusGeometry(2.2,.07,12,64),new THREE.MeshBasicMaterial({color})); halo.rotation.x=Math.PI/2; halo.position.y=.38; g.add(halo); g.position.set(x,.05,0); scene.add(g); return g;};
+    const left=makePod(-3.25,0x06b6d4), right=makePod(3.25,0xf59e0b);
+    const center = new THREE.Mesh(new THREE.OctahedronGeometry(.65,0),new THREE.MeshStandardMaterial({color:0xa855f7,emissive:0x7e22ce,emissiveIntensity:1.5,metalness:.4})); center.position.set(0,1.2,.2); scene.add(center);
+    const symbols:THREE.Mesh[]=[]; for(let i=0;i<18;i++){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.08+(i%3)*.035,0),new THREE.MeshBasicMaterial({color:i%2?0x67e8f9:0xd8b4fe})); const a=(i/18)*Math.PI*2; m.position.set(Math.cos(a)*(5.4+(i%3)*.45),.5+(i%4)*.55,Math.sin(a)*(3.5+(i%2))); scene.add(m); symbols.push(m); }
+    const resize=()=>{ const w=mount.clientWidth,h=Math.max(220,Math.min(330,Math.round(w*.31))); renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }; resize(); const ro=new ResizeObserver(resize); ro.observe(mount);
+    let raf=0; const clock=new THREE.Clock(); const animate=()=>{ const t=clock.getElapsedTime(); center.rotation.y=t*1.7; center.rotation.x=t*.7; left.position.y=.05+Math.sin(t*2)*.035; right.position.y=.05+Math.sin(t*2+1)*.035; symbols.forEach((m,i)=>m.position.y+=Math.sin(t*2+i)*.0007); ring.rotation.z=t*.08; renderer.render(scene,camera); raf=requestAnimationFrame(animate); }; animate();
+    return ()=>{cancelAnimationFrame(raf);ro.disconnect();renderer.dispose();mount.removeChild(renderer.domElement);scene.traverse(o=>{const m=o as THREE.Mesh;if(m.geometry)m.geometry.dispose();const mat=m.material as THREE.Material;if(mat&&'dispose' in mat)mat.dispose();});};
+  },[]);
+  return <div className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-[#05071a] shadow-2xl">
+    <div ref={mountRef} className="w-full" aria-label="Sàn đấu Toán học 3D WebGL" />
+    {!webglOk&&<div className="h-[240px] flex items-center justify-center text-white/70 font-bold">Thiết bị không hỗ trợ WebGL — đang dùng chế độ dự phòng.</div>}
+    <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center"><span className="rounded-full border border-white/15 bg-black/35 px-4 py-1.5 text-[11px] font-black tracking-[.18em] text-white backdrop-blur">SÀN ĐẤU TOÁN HỌC 3D • WEBGL</span></div>
+    <div className="pointer-events-none absolute inset-x-4 bottom-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3 text-white"><div className="rounded-2xl border border-cyan-300/20 bg-slate-950/65 p-3 backdrop-blur"><div className="text-xs font-black text-cyan-300">ĐẤU THỦ A</div><div className="text-xl font-black">{leftName}</div><div className="text-3xl font-black text-cyan-300">{leftScore}</div></div><div className={`mb-3 rounded-full border px-4 py-2 font-black ${urgent?'border-red-400 bg-red-500/80':'border-fuchsia-300/30 bg-fuchsia-600/70'}`}>VS</div><div className="rounded-2xl border border-amber-300/20 bg-slate-950/65 p-3 text-right backdrop-blur"><div className="text-xs font-black text-amber-300">ĐẤU THỦ B</div><div className="text-xl font-black">{rightName}</div><div className="text-3xl font-black text-amber-300">{rightScore}</div></div></div>
+  </div>;
+}
+
 export function Arena() {
   const [players, setPlayers] = useState(initialPlayers);
   const [active, setActive] = useState<'overview'|'challenge'|'teams'|'ranking'|'teacher'>('challenge');
@@ -43,10 +81,10 @@ export function Arena() {
   const [teamB, setTeamB] = useState('Tổ 2');
   const [teamNotice, setTeamNotice] = useState('');
   const [teams, setTeams] = useState([
-    {name:'Tổ 1', points:320, wins:6, relay:2},
-    {name:'Tổ 2', points:295, wins:5, relay:1},
-    {name:'Tổ 3', points:270, wins:4, relay:1},
-    {name:'Tổ 4', points:245, wins:3, relay:0},
+    {name:'Tổ 1', points:320, wins:6, relay:2, rankDays:4},
+    {name:'Tổ 2', points:295, wins:5, relay:1, rankDays:6},
+    {name:'Tổ 3', points:270, wins:4, relay:1, rankDays:3},
+    {name:'Tổ 4', points:245, wins:3, relay:0, rankDays:2},
   ]);
   const [challenger, setChallenger] = useState('p6');
   const [opponent, setOpponent] = useState('p4');
@@ -308,20 +346,20 @@ export function Arena() {
       </section>
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b"><h3 className="font-black text-slate-900">🏆 Xếp hạng các tổ</h3><p className="text-xs text-slate-500 mt-1">Đấu tổ và tiếp sức chỉ tác động bảng xếp hạng tổ.</p></div>
-        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
+        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức • {t.rankDays} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
       </section>
     </div>}
 
     {active==='ranking' && <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="p-5 md:p-6 border-b"><div className="flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Xếp hạng cá nhân và xếp hạng tổ được tách riêng.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Đấu trường lớp học</span></div><div className="flex gap-2 mt-4"><button onClick={()=>setRankingView('individual')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='individual'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Cá nhân</button><button onClick={()=>setRankingView('team')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='team'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Theo tổ</button></div></div>
+      <div className="p-5 md:p-6 border-b"><div className="flex flex-wrap justify-between gap-3 items-center"><div><h2 className="text-xl font-black text-slate-900">Bảng xếp hạng lớp 12A5</h2><p className="text-sm text-slate-500 mt-1">Xếp hạng cá nhân và xếp hạng tổ được tách riêng. Theo dõi thêm <b>Số trận thắng</b> và <b>Số ngày giữ hạng hiện tại</b>.</p></div><span className="px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 font-bold text-sm">● Đấu trường lớp học</span></div><div className="flex gap-2 mt-4"><button onClick={()=>setRankingView('individual')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='individual'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Cá nhân</button><button onClick={()=>setRankingView('team')} className={`px-4 py-2 rounded-xl font-bold ${rankingView==='team'?'bg-indigo-600 text-white':'bg-slate-100 text-slate-600'}`}>Theo tổ</button></div></div>
       {rankingView==='individual'?<div className="divide-y">
         {sorted.map((p,i)=><motion.div layout key={p.id} className="p-4 md:px-6 flex items-center gap-4">
           <div className={`w-10 text-center font-black ${i<3?'text-amber-600':'text-slate-400'}`}>{i===0?'👑':`#${i+1}`}</div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center font-black text-indigo-700">{p.name[0]}</div>
           <div className="min-w-0 flex-1"><div className="font-black text-slate-800 truncate">{p.name} {p.role!=='Học sinh'&&<span className="text-xs ml-1 text-indigo-600">• {p.role}</span>}</div><div className="flex flex-wrap gap-1.5 mt-1"><span className={`text-xs border rounded-full px-2 py-0.5 font-bold ${tierStyle[p.tier]}`}>{p.tier} #{p.pos}</span>{p.guardian&&<span className="text-xs rounded-full px-2 py-0.5 font-bold bg-violet-50 text-violet-700">🏰 {p.guardian}</span>}{p.shield? <span className="text-xs rounded-full px-2 py-0.5 font-bold bg-sky-50 text-sky-700">🛡 {p.shield}</span>:null}</div></div>
-          <div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
+          <div className="hidden sm:flex items-center gap-5 text-center"><div><div className="font-black text-slate-800">{p.wins}</div><div className="text-[11px] text-slate-400">Trận thắng</div></div><div><div className="font-black text-slate-800">{p.rankDays}</div><div className="text-[11px] text-slate-400">Ngày giữ hạng</div></div></div><div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
         </motion.div>)}
-      </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
+      </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức • {t.rankDays} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
     </section>}
 
     {active==='teacher' && <section className="space-y-5">
