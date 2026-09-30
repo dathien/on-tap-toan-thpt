@@ -6,7 +6,7 @@ import { MathText } from '../components/MathText';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
-type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; losses?:number; matchesPlayed?:number; rankDays:number; rankSince?:string; lastRank?:number; shield?:number; placement?:number; guardian?:string; };
+type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; losses?:number; matchesPlayed?:number; rankDays:number; rankSince?:string; lastRank?:number; shield?:number; placement?:number; guardian?:string; champion?:boolean; championSince?:string; };
 type Team = { name:string; points:number; wins:number; relay:number; rankDays:number; rankSince?:string; lastRank?:number };
 const STORAGE_KEY = 'mathArenaData';
 const STORAGE_SCHEMA = 1;
@@ -177,7 +177,7 @@ export function Arena() {
           const remotePlayers:Player[]=profiles.map((p:any)=>{
             const s:any=byId.get(String(p.studentId))||{};
             const role=(['Học sinh','Lớp trưởng','Lớp phó học tập','Bí thư'].includes(s.classRole)?s.classRole:'Học sinh') as Role;
-            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,losses:Number(p.losses)||0,matchesPlayed:Number(p.matchesPlayed)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
+            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,losses:Number(p.losses)||0,matchesPlayed:Number(p.matchesPlayed)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined,champion:p.champion===true||String(p.champion).toUpperCase()==='TRUE',championSince:(p.champion===true||String(p.champion).toUpperCase()==='TRUE')?(p.rankSince||new Date().toISOString()):undefined};
           });
 
           // Google Sheet là nguồn dữ liệu chính thức của Đấu trường.
@@ -245,12 +245,29 @@ export function Arena() {
     return {ok:true, message:`${a.name} thách ${b.name} tại ${b.guardian}. Đây là ải đặc biệt: không tự đổi Hạng; người thách đấu vượt ải được +40 Arena, Người giữ ải bảo vệ thành công được +25 Arena.`};
   };
 
+
+  const championRule = (a?:Player, b?:Player) => {
+    if (!a || !b) return {ok:false, message:'Không xác định được hai học sinh.'};
+    const flagged = players.filter(p=>p.champion).sort((x,y)=>y.arena-x.arena);
+    const currentChampion = flagged[0] || sorted[0];
+    if (!currentChampion || b.id !== currentChampion.id) return {ok:false, message:`${b.name} hiện không phải Champion toàn lớp.`};
+    if (a.id === b.id) return {ok:false, message:'Champion không thể tự thách đấu chính mình.'};
+    if (a.pos !== 1) return {ok:false, message:`${a.name} đang Hạng ${a.pos} ${a.tier}. Chỉ Hạng 1 của một cấp mới được thách Champion.`};
+    return {ok:true, message:`${a.name} • Hạng 1 ${a.tier} thách Champion ${b.name}. Nếu thắng, danh hiệu Champion chuyển sang ${a.name}; thứ hạng trong các cấp giữ nguyên.`};
+  };
+
   const challengeMeta = useMemo(() => {
     const a = challenger === 'manual' ? undefined : players.find(p => p.id === challenger);
     const b = opponent === 'manual' ? undefined : players.find(p => p.id === opponent);
     if (!a || !b) return { type:'1vs1 tự do', reason:'Học sinh nhập thủ công: giáo viên xác nhận trận đấu trực tiếp.', icon:'⚔️' };
-    const champion = sorted[0];
-    if (b.id === champion?.id && a.id !== b.id) return { type:'Thách đấu Champion toàn lớp', reason:`${b.name} đang giữ danh hiệu Champion toàn lớp. Đây là danh hiệu riêng, khác Hạng 1 từng cấp.`, icon:'👑' };
+    // Champion toàn lớp là một danh hiệu riêng. Nếu dữ liệu cũ có nhiều cờ champion,
+    // chỉ người có Arena cao nhất được coi là Champion hiện tại.
+    const flaggedChampions = players.filter(p=>p.champion).sort((x,y)=>y.arena-x.arena);
+    const champion = flaggedChampions[0] || sorted[0];
+    if (b.id === champion?.id && a.id !== b.id) {
+      const eligible = a.pos === 1;
+      return { type:'Thách đấu Champion toàn lớp', reason:eligible?`${a.name} là Hạng 1 ${a.tier} và đủ điều kiện thách Champion ${b.name}. Champion là danh hiệu riêng, không thay thế Hạng 1 của cấp.`:`${a.name} chưa đủ điều kiện: chỉ Hạng 1 của một cấp mới được thách Champion toàn lớp.`, icon:'👑' };
+    }
     if (b.guardian) return { type:'Thách đấu Người giữ ải', reason:`${b.name} đang giữ ${b.guardian}.`, icon:'🛡️' };
     if (b.role !== 'Học sinh') { const rule=classOfficerRule(a,b); return { type:'Thách đấu Ban cán sự', reason:rule.message, icon:'🎖️' }; }
     if (a.tier === b.tier && b.pos === 1) return { type:`Tranh Hạng 1 ${b.tier}`, reason:`${b.name} đang giữ Hạng 1 trong cấp ${b.tier}. Đây không phải Champion toàn lớp.`, icon:'🥇' };
@@ -332,6 +349,8 @@ export function Arena() {
       const isCrossTier = battle.mode === 'Thách đấu vượt cấp' && !!battleA && !!battleB && battleA.tier !== battleB.tier;
       const isOfficerBattle = battle.mode === 'Thách đấu Ban cán sự' && !!battleA && !!battleB && battleB.role !== 'Học sinh';
       const isGuardianBattle = battle.mode === 'Thách đấu Người giữ ải' && !!battleA && !!battleB && !!battleB.guardian;
+      const championNow = [...players].filter(p=>p.champion).sort((x,y)=>y.arena-x.arena)[0] || [...players].sort((x,y)=>y.arena-x.arena)[0];
+      const isChampionBattle = battle.mode === 'Thách đấu Champion toàn lớp' && !!battleA && !!battleB && championNow?.id === battleB.id;
       arenaDeltaForWinner = 10;
       if (isSameTierRule && winner.pos > loser.pos) arenaDeltaForWinner = Math.max(10, loser.arena + 1 - winner.arena);
 
@@ -353,6 +372,30 @@ export function Arena() {
           return p;
         });
         crossTierText = challengerWon ? ` • Vượt Ải Ban cán sự: ${battleA.name} +30 Arena` : ` • ${battleB.role} ${battleB.name} giữ ải thành công: +20 Arena`;
+      } else if (isChampionBattle && battleA && battleB) {
+        const rule=championRule(battleA,battleB);
+        const challengerWon=winner.id===battleA.id;
+        if (!rule.ok) {
+          arenaDeltaForWinner=0;
+          nextPlayers=players;
+          crossTierText=` • Trận Champion không hợp lệ: ${rule.message}`;
+        } else if (challengerWon) {
+          arenaDeltaForWinner=120;
+          nextPlayers=players.map(p=>{
+            if(p.id===battleA.id) return {...p,champion:true,championSince:now,arena:p.arena+120,wins:(p.wins||0)+1,matchesPlayed:(p.matchesPlayed||0)+1};
+            if(p.id===battleB.id) return {...p,champion:false,championSince:undefined,losses:(p.losses||0)+1,matchesPlayed:(p.matchesPlayed||0)+1};
+            return {...p,champion:false,championSince:undefined};
+          });
+          crossTierText=` • 👑 ${battleA.name} trở thành CHAMPION toàn lớp • +120 Arena`;
+        } else {
+          arenaDeltaForWinner=60;
+          nextPlayers=players.map(p=>{
+            if(p.id===battleB.id) return {...p,champion:true,championSince:p.championSince||now,arena:p.arena+60,wins:(p.wins||0)+1,matchesPlayed:(p.matchesPlayed||0)+1};
+            if(p.id===battleA.id) return {...p,losses:(p.losses||0)+1,matchesPlayed:(p.matchesPlayed||0)+1};
+            return p;
+          });
+          crossTierText=` • 👑 ${battleB.name} bảo vệ Champion thành công • +60 Arena`;
+        }
       } else if (isGuardianBattle && battleA && battleB) {
         // Guardian là vai trò do GV chỉ định, độc lập với ladder và Champion.
         // Thắng Guardian = vượt ải; không tự chiếm vai trò Guardian và không tự đổi Hạng.
@@ -537,7 +580,7 @@ export function Arena() {
                   <span className="text-xs font-black text-slate-800">{effectiveMatchType}</span>
                 </div>
                 <div className="mt-1 text-[11px] font-medium leading-4 text-slate-500">
-                  {effectiveMatchType.startsWith('Tranh Hạng 1 ') ? 'Tranh vị trí Hạng 1 trong đúng cấp hiện tại; không phải Champion toàn lớp.' : effectiveMatchType==='Thách đấu Champion toàn lớp' ? 'Trận đặc biệt với Champion duy nhất của toàn lớp.' : effectiveMatchType==='Thách đấu vượt cấp' ? 'Học sinh thách đấu đối thủ ở cấp cao hơn.' : effectiveMatchType==='Thách đấu Ban cán sự' ? 'Ải riêng của Ban cán sự: không tự đổi hạng; HS thắng +30 Arena, cán sự giữ ải thắng +20 Arena.' : effectiveMatchType==='Thách đấu Người giữ ải' ? 'Ải Guardian: thắng để vượt ải; không tự đổi Hạng hoặc chiếm vai trò Người giữ ải.' : effectiveMatchType==='1vs1 cùng cấp' ? 'Hai học sinh thi đấu trong cùng một cấp.' : 'Giáo viên chủ động chọn hình thức thi đấu.'}
+                  {effectiveMatchType.startsWith('Tranh Hạng 1 ') ? 'Tranh vị trí Hạng 1 trong đúng cấp hiện tại; không phải Champion toàn lớp.' : effectiveMatchType==='Thách đấu Champion toàn lớp' ? 'Chỉ Hạng 1 của một cấp được thách Champion; thắng sẽ chiếm danh hiệu nhưng không đổi Hạng trong cấp.' : effectiveMatchType==='Thách đấu vượt cấp' ? 'Học sinh thách đấu đối thủ ở cấp cao hơn.' : effectiveMatchType==='Thách đấu Ban cán sự' ? 'Ải riêng của Ban cán sự: không tự đổi hạng; HS thắng +30 Arena, cán sự giữ ải thắng +20 Arena.' : effectiveMatchType==='Thách đấu Người giữ ải' ? 'Ải Guardian: thắng để vượt ải; không tự đổi Hạng hoặc chiếm vai trò Người giữ ải.' : effectiveMatchType==='1vs1 cùng cấp' ? 'Hai học sinh thi đấu trong cùng một cấp.' : 'Giáo viên chủ động chọn hình thức thi đấu.'}
                 </div>
               </div>
             </div>
@@ -642,7 +685,7 @@ export function Arena() {
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
       <div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Thiết lập Đấu trường dành cho giáo viên</h2></div><p className="text-slate-500 mt-1">Các luật dưới đây là cấu hình của Đấu trường; dữ liệu sẽ được đồng bộ qua backend ở giai đoạn kết nối.</p>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        {[['Luật trận','Chính xác trước • thời gian phá hòa'],['Phạm vi thách đấu','Cùng cấp: tối đa 3 bậc phía trên'],['Vượt cấp','Mặc định: người cuối cấp trên'],['Đại Thách Đấu','Cho phép Top cấp dưới thách Top cấp trên'],['Bảo hộ','1 lượt miễn + 3 trận định vị'],['Guardian','GV chỉ định • HS vượt ải +40 • Guardian giữ ải +25 • không tự đổi hạng'],['Champion toàn lớp','Danh hiệu riêng, không đồng nhất với Hạng 1 từng cấp'],['Ban cán sự','Ải riêng • HS thắng +30 • cán sự giữ ải +20 • không tự đổi hạng'],['Đấu tổ','4 tổ • tiếp sức • công/giữ thành']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">{a}</div><div className="text-sm text-slate-500 mt-2">{b}</div></div>)}
+        {[['Luật trận','Chính xác trước • thời gian phá hòa'],['Phạm vi thách đấu','Cùng cấp: tối đa 3 bậc phía trên'],['Vượt cấp','Mặc định: người cuối cấp trên'],['Đại Thách Đấu','Cho phép Top cấp dưới thách Top cấp trên'],['Bảo hộ','1 lượt miễn + 3 trận định vị'],['Guardian','GV chỉ định • HS vượt ải +40 • Guardian giữ ải +25 • không tự đổi hạng'],['Champion toàn lớp','1 danh hiệu duy nhất • Hạng 1 các cấp được quyền thách • thắng +120 • bảo vệ +60'],['Ban cán sự','Ải riêng • HS thắng +30 • cán sự giữ ải +20 • không tự đổi hạng'],['Đấu tổ','4 tổ • tiếp sức • công/giữ thành']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">{a}</div><div className="text-sm text-slate-500 mt-2">{b}</div></div>)}
       </div>
       </div>
     </section>}
