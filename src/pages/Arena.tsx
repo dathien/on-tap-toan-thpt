@@ -6,7 +6,14 @@ import { MathText } from '../components/MathText';
 
 type Tier = 'Tân binh' | 'Đồng' | 'Bạc' | 'Vàng';
 type Role = 'Học sinh' | 'Lớp trưởng' | 'Lớp phó học tập' | 'Bí thư';
-type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; rankDays:number; shield?:number; placement?:number; guardian?:string; };
+type Player = { id:string; name:string; role:Role; tier:Tier; pos:number; arena:number; xp:number; wins:number; rankDays:number; rankSince?:string; lastRank?:number; shield?:number; placement?:number; guardian?:string; };
+type Team = { name:string; points:number; wins:number; relay:number; rankDays:number; rankSince?:string; lastRank?:number };
+const STORAGE_KEY = 'mathArenaData';
+const STORAGE_SCHEMA = 1;
+const daysAgoIso = (days:number) => new Date(Date.now() - Math.max(0, days) * 86400000).toISOString();
+const daysHeld = (iso?:string, fallback=0) => iso ? Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000)) : fallback;
+function withPlayerRanks(list:Player[], resetChanged=false){ const order=[...list].sort((a,b)=>b.arena-a.arena); const ranks=new Map(order.map((p,i)=>[p.id,i+1])); const now=new Date().toISOString(); return list.map(p=>{ const nr=ranks.get(p.id)||1; const changed=resetChanged && p.lastRank!=null && p.lastRank!==nr; return {...p,lastRank:nr,rankSince:changed?now:(p.rankSince||daysAgoIso(p.rankDays)),rankDays:daysHeld(changed?now:(p.rankSince||daysAgoIso(p.rankDays)),p.rankDays)}; }); }
+function withTeamRanks(list:Team[], resetChanged=false){ const order=[...list].sort((a,b)=>b.points-a.points); const ranks=new Map(order.map((t,i)=>[t.name,i+1])); const now=new Date().toISOString(); return list.map(t=>{ const nr=ranks.get(t.name)||1; const changed=resetChanged && t.lastRank!=null && t.lastRank!==nr; return {...t,lastRank:nr,rankSince:changed?now:(t.rankSince||daysAgoIso(t.rankDays)),rankDays:daysHeld(changed?now:(t.rankSince||daysAgoIso(t.rankDays)),t.rankDays)}; }); }
 
 const initialPlayers: Player[] = [
   { id:'p1', name:'Minh', role:'Học sinh', tier:'Vàng', pos:1, arena:1380, xp:3250, wins:12, rankDays:2 },
@@ -73,19 +80,19 @@ function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent }:{lef
 }
 
 export function Arena() {
-  const [players, setPlayers] = useState(initialPlayers);
+  const [players, setPlayers] = useState<Player[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.players)) return withPlayerRanks(d.players); } } catch{} return withPlayerRanks(initialPlayers); });
   const [active, setActive] = useState<'overview'|'challenge'|'teams'|'ranking'|'teacher'>('challenge');
   const [rankingView, setRankingView] = useState<'individual'|'team'>('individual');
   const [teamMode, setTeamMode] = useState<'Đấu tổ'|'Tiếp sức'>('Đấu tổ');
   const [teamA, setTeamA] = useState('Tổ 1');
   const [teamB, setTeamB] = useState('Tổ 2');
   const [teamNotice, setTeamNotice] = useState('');
-  const [teams, setTeams] = useState([
+  const [teams, setTeams] = useState<Team[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.teams)) return withTeamRanks(d.teams); } } catch{} return withTeamRanks([
     {name:'Tổ 1', points:320, wins:6, relay:2, rankDays:4},
     {name:'Tổ 2', points:295, wins:5, relay:1, rankDays:6},
     {name:'Tổ 3', points:270, wins:4, relay:1, rankDays:3},
     {name:'Tổ 4', points:245, wins:3, relay:0, rankDays:2},
-  ]);
+  ]); });
   const [challenger, setChallenger] = useState('p6');
   const [opponent, setOpponent] = useState('p4');
   const [challengerInput, setChallengerInput] = useState('');
@@ -102,6 +109,8 @@ export function Arena() {
   const [scoreTeamName, setScoreTeamName] = useState('Tổ 1');
   const [teamPointDelta, setTeamPointDelta] = useState(10);
   const [pointNotice, setPointNotice] = useState('');
+  const [newStudentName, setNewStudentName] = useState('');
+  const [newStudentPoints, setNewStudentPoints] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeExpired, setTimeExpired] = useState(false);
@@ -109,16 +118,19 @@ export function Arena() {
   const [inBattle, setInBattle] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number,{a?:string;b?:string;revealed?:boolean}>>({});
-  const [history, setHistory] = useState([
+  const [history, setHistory] = useState<any[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.history)) return d.history; } } catch{} return [
     {id:'m1', a:'Lan', b:'Hùng', result:'Lan thắng', mode:'1vs1', delta:'+10', time:'Hôm nay • 09:15'},
     {id:'m2', a:'Nam', b:'Phúc', result:'Phúc thắng', mode:'1vs1', delta:'+10', time:'Hôm qua • 14:20'},
-  ]);
+  ]; });
   const battleQuestions = [
     { q:'Cho hàm số $f(x)=x^3-3x+2$. Hàm số nghịch biến trên khoảng nào?', options:['$(-\\infty;-1)$','$(-1;1)$','$(1;+\\infty)$','$(-\\infty;+\\infty)$'], correct:'B' },
     { q:'Nghiệm của phương trình $x^2-5x+6=0$ là:', options:['$x=1$ hoặc $x=6$','$x=2$ hoặc $x=3$','$x=-2$ hoặc $x=-3$','$x=3$ hoặc $x=5$'], correct:'B' },
     { q:'Đạo hàm của hàm số $y=x^3-2x$ là:', options:["$y'=3x^2-2$","$y'=x^2-2$","$y'=3x-2$","$y'=3x^2$"], correct:'A' },
   ];
   const sorted = useMemo(() => [...players].sort((a,b) => b.arena-a.arena), [players]);
+
+  useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({schemaVersion:STORAGE_SCHEMA,players,teams,history,savedAt:new Date().toISOString()})); } catch{} }, [players,teams,history]);
+  const addStudent = () => { const name=newStudentName.trim(); const pts=Math.max(0,Math.trunc(Number(newStudentPoints)||0)); if(!name){setPointNotice('Nhập họ tên học sinh cần thêm.');return;} if(players.some(p=>p.name.toLowerCase()===name.toLowerCase())){setPointNotice('Học sinh này đã có trong danh sách.');return;} const id=`p${Date.now()}`; const next=withPlayerRanks([...players,{id,name,role:'Học sinh',tier:'Tân binh',pos:1,arena:pts,xp:0,wins:0,rankDays:0,rankSince:new Date().toISOString()}],true); setPlayers(next); setScoreStudentId(id); setNewStudentName(''); setNewStudentPoints(0); setPointNotice(`Đã thêm ${name} với ${pts} điểm. Dữ liệu đã lưu trên máy.`); };
 
   const challengeMeta = useMemo(() => {
     const a = challenger === 'manual' ? undefined : players.find(p => p.id === challenger);
@@ -172,13 +184,13 @@ export function Arena() {
     const delta = Math.trunc(Number(studentPointDelta));
     const target = players.find(p=>p.id===scoreStudentId);
     if (!target || !Number.isFinite(delta) || delta===0) { setPointNotice('Chọn học sinh và nhập số điểm khác 0.'); return; }
-    setPlayers(prev=>prev.map(p=>p.id===scoreStudentId?{...p,arena:Math.max(0,p.arena+delta)}:p));
+    setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===scoreStudentId?{...p,arena:Math.max(0,p.arena+delta)}:p),true));
     setPointNotice(`${target.name}: ${delta>0?'+':''}${delta} điểm cá nhân.`);
   };
   const addTeamPoints = () => {
     const delta = Math.trunc(Number(teamPointDelta));
     if (!Number.isFinite(delta) || delta===0) { setPointNotice('Chọn tổ và nhập số điểm khác 0.'); return; }
-    setTeams(prev=>prev.map(t=>t.name===scoreTeamName?{...t,points:Math.max(0,t.points+delta)}:t));
+    setTeams(prev=>withTeamRanks(prev.map(t=>t.name===scoreTeamName?{...t,points:Math.max(0,t.points+delta)}:t),true));
     setPointNotice(`${scoreTeamName}: ${delta>0?'+':''}${delta} điểm tổ.`);
   };
 
@@ -318,7 +330,7 @@ export function Arena() {
           <div className="mt-6 text-lg md:text-xl font-bold text-slate-900 leading-8"><MathText text={q.q}/></div>
           <div className="grid md:grid-cols-2 gap-3 mt-6">{q.options.map((opt,i)=><div key={i} className={`rounded-2xl border-2 p-4 flex gap-3 items-center ${cur.revealed&&letters[i]===q.correct?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50'}`}><span className="w-9 h-9 rounded-xl bg-white border flex items-center justify-center font-black text-indigo-700">{letters[i]}</span><MathText text={opt}/></div>)}</div>
           <div className="grid md:grid-cols-2 gap-4 mt-7">{(['a','b'] as const).map(side=><div key={side} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">Đáp án của {side==='a'?battle.a:battle.b}</div><div className="grid grid-cols-4 gap-2 mt-3">{letters.map(L=><button disabled={cur.revealed} key={L} onClick={()=>setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],[side]:L}}))} className={`py-3 rounded-xl border-2 font-black transition ${cur[side]===L?'border-indigo-600 bg-indigo-600 text-white':'border-slate-200 hover:border-indigo-300'}`}>{L}</button>)}</div></div>)}</div>
-          {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>{setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],revealed:true}}));playArenaSound('reveal')}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div><b>{battle.a}:</b> {cur.a===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div><div><b>{battle.b}:</b> {cur.b===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div></div>{questionIndex<battleQuestions.length-1?<button onClick={()=>{setQuestionIndex(v=>v+1);playArenaSound('next')}} className="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2">CÂU TIẾP THEO <ArrowRight size={18}/></button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0); const finalB=scoreB+(cur.b===q.correct?1:0); const result=finalA===finalB?'Hòa':finalA>finalB?`${battle.a} thắng`:`${battle.b} thắng`; playArenaSound('finish'); setHistory(h=>[{id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:'Vừa xong'},...h]); setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({}); setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}`);}} className="mt-4 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center gap-2"><Trophy size={18}/> KẾT THÚC TRẬN</button>}</div>}
+          {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>{setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],revealed:true}}));playArenaSound('reveal')}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div><b>{battle.a}:</b> {cur.a===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div><div><b>{battle.b}:</b> {cur.b===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div></div>{questionIndex<battleQuestions.length-1?<button onClick={()=>{setQuestionIndex(v=>v+1);playArenaSound('next')}} className="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2">CÂU TIẾP THEO <ArrowRight size={18}/></button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0); const finalB=scoreB+(cur.b===q.correct?1:0); const result=finalA===finalB?'Hòa':finalA>finalB?`${battle.a} thắng`:`${battle.b} thắng`; playArenaSound('finish'); const winnerName=finalA===finalB?'':(finalA>finalB?battle.a:battle.b); if(winnerName){ setPlayers(prev=>withPlayerRanks(prev.map(p=>p.name===winnerName?{...p,wins:(p.wins||0)+1}:p),false)); } setHistory(h=>[{id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:new Date().toLocaleString('vi-VN')},...h]); setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({}); setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}`);}} className="mt-4 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center gap-2"><Trophy size={18}/> KẾT THÚC TRẬN</button>}</div>}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
             <button onClick={()=>setInBattle(false)} className="text-sm font-bold text-slate-500 hover:text-slate-800">← Quay lại điều khiển trận</button>
             <div className="flex gap-2"><button onClick={()=>setTimerRunning(v=>!v)} disabled={timeLeft===0} className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-700">{timerRunning?'⏸ Tạm dừng':'▶ Tiếp tục'}</button><button onClick={()=>{setTimeLeft(battleMinutes*60);setTimeExpired(false);setTimerRunning(true)}} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold">↻ Đặt lại giờ</button></div>
@@ -346,7 +358,7 @@ export function Arena() {
       </section>
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-5 border-b"><h3 className="font-black text-slate-900">🏆 Xếp hạng các tổ</h3><p className="text-xs text-slate-500 mt-1">Đấu tổ và tiếp sức chỉ tác động bảng xếp hạng tổ.</p></div>
-        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức • {t.rankDays} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
+        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức • {daysHeld(t.rankSince,t.rankDays)} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
       </section>
     </div>}
 
@@ -357,14 +369,15 @@ export function Arena() {
           <div className={`w-10 text-center font-black ${i<3?'text-amber-600':'text-slate-400'}`}>{i===0?'👑':`#${i+1}`}</div>
           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-100 to-violet-100 flex items-center justify-center font-black text-indigo-700">{p.name[0]}</div>
           <div className="min-w-0 flex-1"><div className="font-black text-slate-800 truncate">{p.name} {p.role!=='Học sinh'&&<span className="text-xs ml-1 text-indigo-600">• {p.role}</span>}</div><div className="flex flex-wrap gap-1.5 mt-1"><span className={`text-xs border rounded-full px-2 py-0.5 font-bold ${tierStyle[p.tier]}`}>{p.tier} #{p.pos}</span>{p.guardian&&<span className="text-xs rounded-full px-2 py-0.5 font-bold bg-violet-50 text-violet-700">🏰 {p.guardian}</span>}{p.shield? <span className="text-xs rounded-full px-2 py-0.5 font-bold bg-sky-50 text-sky-700">🛡 {p.shield}</span>:null}</div></div>
-          <div className="hidden sm:flex items-center gap-5 text-center"><div><div className="font-black text-slate-800">{p.wins}</div><div className="text-[11px] text-slate-400">Trận thắng</div></div><div><div className="font-black text-slate-800">{p.rankDays}</div><div className="text-[11px] text-slate-400">Ngày giữ hạng</div></div></div><div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
+          <div className="hidden sm:flex items-center gap-5 text-center"><div><div className="font-black text-slate-800">{p.wins}</div><div className="text-[11px] text-slate-400">Trận thắng</div></div><div><div className="font-black text-slate-800">{daysHeld(p.rankSince,p.rankDays)}</div><div className="text-[11px] text-slate-400">Ngày giữ hạng</div></div></div><div className="text-right"><div className="font-black text-slate-900">{p.arena}</div><div className="text-xs text-slate-400">Arena</div></div>
         </motion.div>)}
-      </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức • {t.rankDays} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
+      </div>:<div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><motion.div layout key={t.name} className="p-4 md:px-6 flex items-center gap-4"><div className="w-10 text-center font-black text-amber-600">{i===0?'👑':`#${i+1}`}</div><div className="w-11 h-11 rounded-2xl bg-indigo-50 flex items-center justify-center font-black text-indigo-700">T{i+1}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức • {daysHeld(t.rankSince,t.rankDays)} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-slate-900">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></motion.div>)}</div>}
     </section>}
 
     {active==='teacher' && <section className="space-y-5">
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
         <div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-xl font-black text-slate-900">Điểm thi đua do giáo viên điều chỉnh</h2><p className="text-slate-500 mt-1">Cộng hoặc trừ điểm trực tiếp cho cá nhân và tổ. Điểm cập nhật ngay vào bảng xếp hạng tương ứng.</p></div></div>
+        <div className="mt-6 rounded-2xl border-2 border-emerald-100 bg-emerald-50/50 p-5"><div className="font-black text-emerald-900">➕ Thêm học sinh vào dữ liệu demo</div><p className="mt-1 text-sm text-emerald-800/70">Không giới hạn ở danh sách mẫu. Học sinh thêm mới được lưu trên máy và xuất hiện ngay trong bảng xếp hạng.</p><div className="grid sm:grid-cols-[1fr_150px_auto] gap-3 mt-4"><input value={newStudentName} onChange={e=>setNewStudentName(e.target.value)} placeholder="Nhập họ tên học sinh" className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-bold"/><input type="number" min="0" value={newStudentPoints} onChange={e=>setNewStudentPoints(Number(e.target.value))} placeholder="Điểm ban đầu" className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-black"/><button onClick={addStudent} className="rounded-xl bg-emerald-600 px-5 py-3 text-white font-black">THÊM HỌC SINH</button></div></div>
         <div className="grid lg:grid-cols-2 gap-4 mt-6">
           <div className="rounded-2xl border-2 border-indigo-100 bg-indigo-50/40 p-5"><div className="font-black text-indigo-900">👤 Điểm cá nhân</div><div className="grid sm:grid-cols-[1fr_130px] gap-3 mt-4"><select value={scoreStudentId} onChange={e=>setScoreStudentId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-bold">{players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.arena} điểm</option>)}</select><input type="number" value={studentPointDelta} onChange={e=>setStudentPointDelta(Number(e.target.value))} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-black" aria-label="Điểm cộng hoặc trừ cá nhân" /></div><div className="text-xs text-slate-500 mt-2">Nhập số dương để cộng, số âm để trừ.</div><button onClick={addStudentPoints} className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-white font-black">CẬP NHẬT ĐIỂM CÁ NHÂN</button></div>
           <div className="rounded-2xl border-2 border-amber-100 bg-amber-50/50 p-5"><div className="font-black text-amber-900">👥 Điểm tổ / nhóm</div><div className="grid sm:grid-cols-[1fr_130px] gap-3 mt-4"><select value={scoreTeamName} onChange={e=>setScoreTeamName(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-bold">{teams.map(t=><option key={t.name} value={t.name}>{t.name} • {t.points} điểm</option>)}</select><input type="number" value={teamPointDelta} onChange={e=>setTeamPointDelta(Number(e.target.value))} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-black" aria-label="Điểm cộng hoặc trừ tổ" /></div><div className="text-xs text-slate-500 mt-2">Điểm tổ tách riêng, không làm thay đổi hạng cá nhân.</div><button onClick={addTeamPoints} className="mt-4 w-full rounded-xl bg-amber-500 py-3 text-slate-950 font-black">CẬP NHẬT ĐIỂM TỔ</button></div>
