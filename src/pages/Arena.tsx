@@ -227,7 +227,7 @@ export function Arena() {
     if (b.guardian) return { type:'Thách đấu Người giữ ải', reason:`${b.name} đang giữ ${b.guardian}.`, icon:'🛡️' };
     if (b.role !== 'Học sinh') return { type:'Thách đấu Ban cán sự', reason:`${b.name} đang giữ vai trò ${b.role}.`, icon:'🎖️' };
     if (a.tier !== b.tier) return { type:'Thách đấu vượt cấp', reason:`${a.name} (${a.tier}) đang thách ${b.name} (${b.tier}).`, icon:'🚀' };
-    return { type:'1vs1 cùng cấp', reason:`Hạng ${a.pos} đấu Hạng ${b.pos} tại ${arenaByTier[a.tier].label}.`, icon:'⚔️' };
+    return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}.`, icon:'⚔️' };
   }, [challenger, opponent, players, sorted]);
 
   const effectiveMatchType = matchTypeOverride || challengeMeta.type;
