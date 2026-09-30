@@ -33,6 +33,16 @@ const tierStyle: Record<Tier,string> = {
   'Vàng':'bg-amber-50 text-amber-700 border-amber-200'
 };
 
+type ArenaLevel = 'Khởi động' | 'Bứt phá' | 'Chinh phục' | 'Đỉnh cao';
+const tierOrder: Tier[] = ['Tân binh','Đồng','Bạc','Vàng'];
+const arenaByTier: Record<Tier,{level:ArenaLevel;academic:string;label:string;primary:number;secondary:number;fog:number;css:string}> = {
+  'Tân binh':{level:'Khởi động',academic:'Yếu',label:'SÂN KHỞI ĐỘNG',primary:0x22c55e,secondary:0x86efac,fog:0x06150c,css:'from-emerald-950 via-green-900 to-slate-950'},
+  'Đồng':{level:'Bứt phá',academic:'Trung bình',label:'SÂN BỨT PHÁ',primary:0x0ea5e9,secondary:0x67e8f9,fog:0x041421,css:'from-sky-950 via-blue-900 to-slate-950'},
+  'Bạc':{level:'Chinh phục',academic:'Khá',label:'SÂN CHINH PHỤC',primary:0x8b5cf6,secondary:0xd8b4fe,fog:0x110720,css:'from-violet-950 via-purple-900 to-slate-950'},
+  'Vàng':{level:'Đỉnh cao',academic:'Giỏi',label:'SÂN ĐỈNH CAO',primary:0xf59e0b,secondary:0xfde68a,fog:0x1c1003,css:'from-amber-950 via-orange-900 to-slate-950'}
+};
+function higherTier(a?:Tier,b?:Tier):Tier { const ai=Math.max(0,tierOrder.indexOf(a||'Tân binh')); const bi=Math.max(0,tierOrder.indexOf(b||'Tân binh')); return tierOrder[Math.max(ai,bi)]; }
+
 const modes = [
   { icon:Swords, title:'Thách đấu 1 vs 1', desc:'Đấu cùng cấp, tranh vị trí bằng độ chính xác và thời gian.', tag:'Cốt lõi' },
   { icon:Route, title:'Thách đấu vượt cấp', desc:'Đủ điều kiện để đánh cửa ải hoặc Top của cấp trên.', tag:'Leo hạng' },
@@ -42,7 +52,8 @@ const modes = [
   { icon:Users, title:'Đấu tổ & Tiếp sức', desc:'4 tổ công thành, giữ thành hoặc giải nối tiếp từng chặng.', tag:'Đồng đội' },
 ];
 
-function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent }:{leftName:string;rightName:string;leftScore:number;rightScore:number;urgent:boolean}) {
+function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent, arenaTier }:{leftName:string;rightName:string;leftScore:number;rightScore:number;urgent:boolean;arenaTier:Tier}) {
+  const theme=arenaByTier[arenaTier];
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [webglOk, setWebglOk] = useState(true);
   useEffect(() => {
@@ -51,30 +62,30 @@ function MathArena3D({ leftName, rightName, leftScore, rightScore, urgent }:{lef
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true }); } catch { setWebglOk(false); return; }
     const scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x080b24, 9, 28);
+    scene.fog = new THREE.Fog(theme.fog, 9, 28);
     const camera = new THREE.PerspectiveCamera(48, 1, .1, 100);
     camera.position.set(0, 7.2, 12.5); camera.lookAt(0, .4, 0);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.7));
-    renderer.setClearColor(0x05071a, 1);
+    renderer.setClearColor(theme.fog, 1);
     mount.appendChild(renderer.domElement);
-    const hemi = new THREE.HemisphereLight(0x9cc9ff, 0x160b2d, 2.2); scene.add(hemi);
-    const key = new THREE.PointLight(0x6ee7ff, 24, 22); key.position.set(-5,5,5); scene.add(key);
-    const rim = new THREE.PointLight(0xc44cff, 28, 22); rim.position.set(5,4,3); scene.add(rim);
-    const floor = new THREE.Mesh(new THREE.CylinderGeometry(7.6,8.4,.55,64), new THREE.MeshStandardMaterial({color:0x11183b,metalness:.75,roughness:.28})); floor.position.y=-.55; scene.add(floor);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(6.7,.12,16,96), new THREE.MeshStandardMaterial({color:0x8b5cf6,emissive:0x5b21b6,emissiveIntensity:2})); ring.rotation.x=Math.PI/2; ring.position.y=-.2; scene.add(ring);
-    const grid = new THREE.GridHelper(13,18,0x22d3ee,0x29305e); grid.position.y=-.22; scene.add(grid);
+    const hemi = new THREE.HemisphereLight(theme.secondary, theme.fog, 2.2); scene.add(hemi);
+    const key = new THREE.PointLight(theme.primary, 26, 22); key.position.set(-5,5,5); scene.add(key);
+    const rim = new THREE.PointLight(theme.secondary, 28, 22); rim.position.set(5,4,3); scene.add(rim);
+    const floor = new THREE.Mesh(new THREE.CylinderGeometry(7.6,8.4,.55,64), new THREE.MeshStandardMaterial({color:theme.fog,metalness:.75,roughness:.28,emissive:theme.primary,emissiveIntensity:.08})); floor.position.y=-.55; scene.add(floor);
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(6.7,.12,16,96), new THREE.MeshStandardMaterial({color:theme.primary,emissive:theme.primary,emissiveIntensity:2})); ring.rotation.x=Math.PI/2; ring.position.y=-.2; scene.add(ring);
+    const grid = new THREE.GridHelper(13,18,theme.secondary,theme.primary); grid.position.y=-.22; scene.add(grid);
     const makePod=(x:number,color:number)=>{ const g=new THREE.Group(); const base=new THREE.Mesh(new THREE.CylinderGeometry(2.15,2.45,.7,48),new THREE.MeshStandardMaterial({color,metalness:.65,roughness:.3,emissive:color,emissiveIntensity:.18})); g.add(base); const halo=new THREE.Mesh(new THREE.TorusGeometry(2.2,.07,12,64),new THREE.MeshBasicMaterial({color})); halo.rotation.x=Math.PI/2; halo.position.y=.38; g.add(halo); g.position.set(x,.05,0); scene.add(g); return g;};
-    const left=makePod(-3.25,0x06b6d4), right=makePod(3.25,0xf59e0b);
-    const center = new THREE.Mesh(new THREE.OctahedronGeometry(.65,0),new THREE.MeshStandardMaterial({color:0xa855f7,emissive:0x7e22ce,emissiveIntensity:1.5,metalness:.4})); center.position.set(0,1.2,.2); scene.add(center);
-    const symbols:THREE.Mesh[]=[]; for(let i=0;i<18;i++){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.08+(i%3)*.035,0),new THREE.MeshBasicMaterial({color:i%2?0x67e8f9:0xd8b4fe})); const a=(i/18)*Math.PI*2; m.position.set(Math.cos(a)*(5.4+(i%3)*.45),.5+(i%4)*.55,Math.sin(a)*(3.5+(i%2))); scene.add(m); symbols.push(m); }
+    const left=makePod(-3.25,theme.primary), right=makePod(3.25,theme.secondary);
+    const center = new THREE.Mesh(new THREE.OctahedronGeometry(.65,0),new THREE.MeshStandardMaterial({color:theme.secondary,emissive:theme.primary,emissiveIntensity:1.5,metalness:.4})); center.position.set(0,1.2,.2); scene.add(center);
+    const symbols:THREE.Mesh[]=[]; for(let i=0;i<18;i++){ const m=new THREE.Mesh(new THREE.IcosahedronGeometry(.08+(i%3)*.035,0),new THREE.MeshBasicMaterial({color:i%2?theme.primary:theme.secondary})); const a=(i/18)*Math.PI*2; m.position.set(Math.cos(a)*(5.4+(i%3)*.45),.5+(i%4)*.55,Math.sin(a)*(3.5+(i%2))); scene.add(m); symbols.push(m); }
     const resize=()=>{ const w=mount.clientWidth,h=Math.max(220,Math.min(330,Math.round(w*.31))); renderer.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }; resize(); const ro=new ResizeObserver(resize); ro.observe(mount);
     let raf=0; const clock=new THREE.Clock(); const animate=()=>{ const t=clock.getElapsedTime(); center.rotation.y=t*1.7; center.rotation.x=t*.7; left.position.y=.05+Math.sin(t*2)*.035; right.position.y=.05+Math.sin(t*2+1)*.035; symbols.forEach((m,i)=>m.position.y+=Math.sin(t*2+i)*.0007); ring.rotation.z=t*.08; renderer.render(scene,camera); raf=requestAnimationFrame(animate); }; animate();
     return ()=>{cancelAnimationFrame(raf);ro.disconnect();renderer.dispose();mount.removeChild(renderer.domElement);scene.traverse(o=>{const m=o as THREE.Mesh;if(m.geometry)m.geometry.dispose();const mat=m.material as THREE.Material;if(mat&&'dispose' in mat)mat.dispose();});};
-  },[]);
+  },[arenaTier]);
   return <div className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-[#05071a] shadow-2xl">
     <div ref={mountRef} className="w-full" aria-label="Sàn đấu Toán học 3D WebGL" />
     {!webglOk&&<div className="h-[240px] flex items-center justify-center text-white/70 font-bold">Thiết bị không hỗ trợ WebGL — đang dùng chế độ dự phòng.</div>}
-    <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center"><span className="rounded-full border border-white/15 bg-black/35 px-4 py-1.5 text-[11px] font-black tracking-[.18em] text-white backdrop-blur">SÀN ĐẤU TOÁN HỌC 3D • WEBGL</span></div>
+    <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center"><span className="rounded-full border border-white/15 bg-black/35 px-4 py-1.5 text-[11px] font-black tracking-[.18em] text-white backdrop-blur">{theme.label} • TOÁN HỌC 3D • WEBGL</span></div>
     <div className="pointer-events-none absolute inset-x-4 bottom-4 grid grid-cols-[1fr_auto_1fr] items-end gap-3 text-white"><div className="rounded-2xl border border-cyan-300/20 bg-slate-950/65 p-3 backdrop-blur"><div className="text-xs font-black text-cyan-300">ĐẤU THỦ A</div><div className="text-xl font-black">{leftName}</div><div className="text-3xl font-black text-cyan-300">{leftScore}</div></div><div className={`mb-3 rounded-full border px-4 py-2 font-black ${urgent?'border-red-400 bg-red-500/80':'border-fuchsia-300/30 bg-fuchsia-600/70'}`}>VS</div><div className="rounded-2xl border border-amber-300/20 bg-slate-950/65 p-3 text-right backdrop-blur"><div className="text-xs font-black text-amber-300">ĐẤU THỦ B</div><div className="text-xl font-black">{rightName}</div><div className="text-3xl font-black text-amber-300">{rightScore}</div></div></div>
   </div>;
 }
@@ -114,7 +125,7 @@ export function Arena() {
   const [timeLeft, setTimeLeft] = useState(300);
   const [timerRunning, setTimerRunning] = useState(false);
   const [timeExpired, setTimeExpired] = useState(false);
-  const [battle, setBattle] = useState<{a:string;b:string;mode:string}|null>(null);
+  const [battle, setBattle] = useState<{a:string;b:string;mode:string;arenaTier:Tier}|null>(null);
   const [inBattle, setInBattle] = useState(false);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number,{a?:string;b?:string;revealed?:boolean}>>({});
@@ -295,7 +306,7 @@ export function Arena() {
             <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm text-indigo-800 font-bold">⏱ Nhập 1–90 phút</div>
           </div>
           <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600"><b className="text-slate-900">Cách tổ chức:</b> hai học sinh giải trên giấy hoặc lên bảng. App chỉ hiển thị câu hỏi, nhận đáp án A–D cuối cùng, chấm điểm và điều khiển diễn biến trận.</div>
-          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} setTickets(v=>v-1); setBattle({a:aName,b:bName,mode:effectiveMatchType}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
+          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} setTickets(v=>v-1); const aTier:Tier=challenger==='manual'?'Tân binh':(players.find(p=>p.id===challenger)?.tier||'Tân binh'); const bTier:Tier=opponent==='manual'?'Tân binh':(players.find(p=>p.id===opponent)?.tier||'Tân binh'); setBattle({a:aName,b:bName,mode:effectiveMatchType,arenaTier:higherTier(aTier,bTier)}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
             <div className="px-5 pt-5 pb-4 text-center">
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black tracking-wide text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> TRẬN ĐẤU ĐÃ SẴN SÀNG</div>
               <div className="mt-3 flex items-center justify-center gap-3 text-slate-900"><span className="text-xl md:text-2xl font-black">{battle.a}</span><span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-black text-white">VS</span><span className="text-xl md:text-2xl font-black">{battle.b}</span></div>
@@ -314,7 +325,8 @@ export function Arena() {
           <div className="absolute inset-x-[5%] top-[165px] h-[250px] rounded-[50%] border-[12px] border-indigo-400/20 bg-gradient-to-b from-indigo-500/15 to-cyan-400/5 shadow-[0_0_80px_rgba(99,102,241,.28)]" style={{transform:'rotateX(67deg)',transformOrigin:'center top'}} />
           <div className="absolute left-[8%] top-[210px] text-4xl font-black text-cyan-300/10">∫</div><div className="absolute right-[9%] top-[205px] text-4xl font-black text-fuchsia-300/10">π</div><div className="absolute left-[18%] top-[315px] text-3xl font-black text-amber-300/10">Σ</div><div className="absolute right-[20%] top-[320px] text-3xl font-black text-emerald-300/10">√</div>
         </div>
-        <div className="relative overflow-hidden bg-gradient-to-r from-slate-950/95 via-indigo-950/95 to-violet-950/95 text-white p-5 md:p-7">
+        <div className="relative p-3 md:p-5"><MathArena3D leftName={battle.a} rightName={battle.b} leftScore={scoreA} rightScore={scoreB} urgent={timeLeft<=30} arenaTier={battle.arenaTier}/><div className="mt-2 text-center text-xs font-black tracking-widest text-white/70">{arenaByTier[battle.arenaTier].label} • CẤP {arenaByTier[battle.arenaTier].academic.toUpperCase()} • SÂN CỦA CẤP CAO HƠN</div></div>
+        <div className={`relative overflow-hidden bg-gradient-to-r ${arenaByTier[battle.arenaTier].css} text-white p-5 md:p-7`}>
           <motion.div animate={{opacity:[.2,.5,.2]}} transition={{duration:2,repeat:Infinity}} className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-amber-300"/>
           <div className="flex items-center justify-between gap-3"><div className="text-xs font-black tracking-[.18em] text-indigo-200">⚔️ SÀN ĐẤU TOÁN HỌC 3D • {battle.mode.toUpperCase()}</div><button type="button" onClick={()=>setSoundEnabled(v=>!v)} className="rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-xs font-black text-white hover:bg-white/15">{soundEnabled?'🔊 Âm thanh':'🔇 Tắt âm'}</button></div>
           <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-5">
