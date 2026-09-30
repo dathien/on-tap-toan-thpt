@@ -218,6 +218,18 @@ export function Arena() {
     } catch(err){console.error(err);setCloudStatus('offline');setPointNotice(`Đã lưu ${name} trên máy; chưa đồng bộ được Google Sheet.`);}
   };
 
+  const crossTierRule = (a?:Player, b?:Player) => {
+    if (!a || !b) return {ok:false, message:'Không xác định được hai học sinh.'};
+    const ai=tierOrder.indexOf(a.tier), bi=tierOrder.indexOf(b.tier);
+    if (ai < 0 || bi < 0 || bi !== ai + 1) return {ok:false, message:'Vượt cấp chỉ áp dụng lên đúng 1 cấp liền kề.'};
+    const upper=players.filter(p=>p.tier===b.tier);
+    const lastRank=Math.max(...upper.map(p=>p.pos));
+    const normalTarget=b.pos===lastRank;
+    const grandChallenge=a.pos===1 && b.pos===1;
+    if (!normalTarget && !grandChallenge) return {ok:false, message:`${a.name} chỉ được thách Hạng ${lastRank} ${b.tier}. Riêng Hạng 1 ${a.tier} được mở Đại Thách Đấu với Hạng 1 ${b.tier}.`};
+    return {ok:true, grandChallenge, lastRank, message:grandChallenge?'Đại Thách Đấu: Hạng 1 cấp dưới thách Hạng 1 cấp trên.':`Cửa vượt cấp: thách Hạng ${lastRank} ${b.tier}.`};
+  };
+
   const challengeMeta = useMemo(() => {
     const a = challenger === 'manual' ? undefined : players.find(p => p.id === challenger);
     const b = opponent === 'manual' ? undefined : players.find(p => p.id === opponent);
@@ -227,7 +239,7 @@ export function Arena() {
     if (b.id === champion?.id && a.tier !== b.tier) return { type:'Thách đấu Champion toàn lớp', reason:`${b.name} đang giữ danh hiệu Champion toàn lớp. Đây là danh hiệu riêng, khác Hạng 1 từng cấp.`, icon:'👑' };
     if (b.guardian) return { type:'Thách đấu Người giữ ải', reason:`${b.name} đang giữ ${b.guardian}.`, icon:'🛡️' };
     if (b.role !== 'Học sinh') return { type:'Thách đấu Ban cán sự', reason:`${b.name} đang giữ vai trò ${b.role}.`, icon:'🎖️' };
-    if (a.tier !== b.tier) return { type:'Thách đấu vượt cấp', reason:`${a.name} (${a.tier}) đang thách ${b.name} (${b.tier}).`, icon:'🚀' };
+    if (a.tier !== b.tier) { const rule=crossTierRule(a,b); return { type:'Thách đấu vượt cấp', reason:rule.ok?rule.message:`Chưa đủ điều kiện: ${rule.message}`, icon:'🚀' }; }
     return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}; Hạng ${a.pos} đấu Hạng ${b.pos}.`, icon:'⚔️' };
   }, [challenger, opponent, players, sorted]);
 
@@ -294,33 +306,47 @@ export function Arena() {
     const winner=finalA===finalB?undefined:(finalA>finalB?playerA:playerB);
     const loser=finalA===finalB?undefined:(finalA>finalB?playerB:playerA);
 
-    // Luật nền tảng: trận cùng cấp dùng cơ chế ladder.
-    // Học sinh hạng thấp thắng học sinh hạng cao -> vượt lên vị trí của đối thủ;
-    // các vị trí trong cùng cấp được tính lại theo Arena. Nếu hạng cao thắng hạng thấp,
-    // thứ hạng không đảo nhưng người thắng vẫn nhận +10 Arena.
+    // Luật xếp hạng: cùng cấp dùng ladder; vượt cấp dùng cửa ải liền kề.
     let arenaDeltaForWinner = 0;
     let nextPlayers = players;
+    let crossTierText = '';
     if (winner && loser) {
       const sameTier = winner.tier === loser.tier;
       const isSameTierRule = sameTier && (battle.mode === '1vs1 cùng cấp' || battle.mode.startsWith('Tranh Hạng 1'));
+      const battleA=playerA, battleB=playerB;
+      const isCrossTier = battle.mode === 'Thách đấu vượt cấp' && !!battleA && !!battleB && battleA.tier !== battleB.tier;
       arenaDeltaForWinner = 10;
-      if (isSameTierRule && winner.pos > loser.pos) {
-        arenaDeltaForWinner = Math.max(10, loser.arena + 1 - winner.arena);
-      }
-      const now = new Date().toISOString();
-      const updated = players.map(p => {
+      if (isSameTierRule && winner.pos > loser.pos) arenaDeltaForWinner = Math.max(10, loser.arena + 1 - winner.arena);
+
+      let updated = players.map(p => {
         if (p.id === winner.id) return {...p, arena:p.arena+arenaDeltaForWinner, wins:(p.wins||0)+1, matchesPlayed:(p.matchesPlayed||0)+1};
         if (p.id === loser.id) return {...p, losses:(p.losses||0)+1, matchesPlayed:(p.matchesPlayed||0)+1};
         return p;
       });
+      const now = new Date().toISOString();
+
       if (isSameTierRule) {
         const tierSorted = updated.filter(p=>p.tier===winner.tier).sort((a,b)=>b.arena-a.arena || a.pos-b.pos);
         const rankMap = new Map(tierSorted.map((p,i)=>[p.id,i+1]));
-        nextPlayers = updated.map(p=>{
-          if(p.tier!==winner.tier) return p;
-          const newPos=rankMap.get(p.id)||p.pos;
-          return {...p,pos:newPos,rankSince:newPos!==p.pos?now:p.rankSince,rankDays:newPos!==p.pos?0:p.rankDays};
-        });
+        nextPlayers = updated.map(p=>p.tier!==winner.tier?p:{...p,pos:rankMap.get(p.id)||p.pos,rankSince:(rankMap.get(p.id)||p.pos)!==p.pos?now:p.rankSince,rankDays:(rankMap.get(p.id)||p.pos)!==p.pos?0:p.rankDays});
+      } else if (isCrossTier && battleA && battleB) {
+        const rule=crossTierRule(battleA,battleB);
+        const challengerWon=winner.id===battleA.id;
+        if (rule.ok && challengerWon) {
+          const oldATier=battleA.tier, oldAPos=battleA.pos, oldBTier=battleB.tier, oldBPos=battleB.pos;
+          arenaDeltaForWinner = rule.grandChallenge ? 100 : 50;
+          updated = players.map(p=>{
+            if(p.id===battleA.id) return {...p,tier:oldBTier,pos:oldBPos,arena:p.arena+arenaDeltaForWinner,wins:(p.wins||0)+1,matchesPlayed:(p.matchesPlayed||0)+1,shield:1,placement:3,rankSince:now,rankDays:0};
+            if(p.id===battleB.id) return {...p,tier:oldATier,pos:oldAPos,losses:(p.losses||0)+1,matchesPlayed:(p.matchesPlayed||0)+1,rankSince:now,rankDays:0};
+            return p;
+          });
+          nextPlayers=updated;
+          crossTierText=rule.grandChallenge?` • ĐẠI THÁCH ĐẤU thành công: ${battleA.name} lên ${oldBTier} Hạng ${oldBPos}`:` • Vượt cấp thành công: ${battleA.name} lên ${oldBTier} Hạng ${oldBPos}`;
+        } else {
+          arenaDeltaForWinner = 15;
+          nextPlayers=players.map(p=>p.id===winner.id?{...p,arena:p.arena+15,wins:(p.wins||0)+1,matchesPlayed:(p.matchesPlayed||0)+1}:p.id===loser.id?{...p,losses:(p.losses||0)+1,matchesPlayed:(p.matchesPlayed||0)+1}:p);
+          crossTierText=rule.ok?' • Người thách đấu chưa vượt cấp; thứ hạng giữ nguyên.':'';
+        }
       } else {
         nextPlayers = updated;
       }
@@ -358,11 +384,11 @@ export function Arena() {
       }
       setCloudStatus('online');
       const rankText=rankChange&&winnerAfter?` • ${winner.name} lên Hạng ${winnerAfter.pos} ${winnerAfter.tier}`:'';
-      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText} • +${arenaDeltaForWinner||0} Arena • đã lưu Google Sheet`);
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText}${crossTierText} • +${arenaDeltaForWinner||0} Arena • đã lưu Google Sheet`);
     } catch(err){
       console.error(err); setCloudStatus('offline');
       const rankText=rankChange&&winnerAfter?` • ${winner.name} lên Hạng ${winnerAfter.pos} ${winnerAfter.tier}`:'';
-      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText} • đã lưu trên máy, chưa đồng bộ Google Sheet`);
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}${rankText}${crossTierText} • đã lưu trên máy, chưa đồng bộ Google Sheet`);
     }
     setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({});
   };
@@ -482,7 +508,7 @@ export function Arena() {
             <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 text-sm text-indigo-800 font-bold">⏱ Nhập 1–90 phút</div>
           </div>
           <div className="mt-5 rounded-2xl bg-slate-50 border border-slate-200 p-4 text-sm text-slate-600"><b className="text-slate-900">Cách tổ chức:</b> hai học sinh giải trên giấy hoặc lên bảng. App chỉ hiển thị câu hỏi, nhận đáp án A–D cuối cùng, chấm điểm và điều khiển diễn biến trận.</div>
-          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} setTickets(v=>v-1); const aTier:Tier=challenger==='manual'?'Tân binh':(players.find(p=>p.id===challenger)?.tier||'Tân binh'); const bTier:Tier=opponent==='manual'?'Tân binh':(players.find(p=>p.id===opponent)?.tier||'Tân binh'); setBattle({a:aName,b:bName,mode:effectiveMatchType,arenaTier:higherTier(aTier,bTier)}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
+          {!battle ? <button onClick={()=>{if(tickets<=0){setNotice('Không còn vé thách đấu.');return;} const aName=challenger==='manual'?challengerInput.trim():players.find(p=>p.id===challenger)?.name||''; const bName=opponent==='manual'?opponentInput.trim():players.find(p=>p.id===opponent)?.name||''; if(!aName||!bName){setNotice('Vui lòng chọn hoặc nhập đầy đủ tên hai học sinh.');return;} if(aName.toLocaleLowerCase('vi')===bName.toLocaleLowerCase('vi')){setNotice('Không thể tự thách đấu chính mình.');return;} const aPlayer=challenger==='manual'?undefined:players.find(p=>p.id===challenger); const bPlayer=opponent==='manual'?undefined:players.find(p=>p.id===opponent); if(effectiveMatchType==='Thách đấu vượt cấp' && aPlayer && bPlayer){const rule=crossTierRule(aPlayer,bPlayer); if(!rule.ok){setNotice(`🚀 ${rule.message}`);return;}} setTickets(v=>v-1); const aTier:Tier=challenger==='manual'?'Tân binh':(players.find(p=>p.id===challenger)?.tier||'Tân binh'); const bTier:Tier=opponent==='manual'?'Tân binh':(players.find(p=>p.id===opponent)?.tier||'Tân binh'); setBattle({a:aName,b:bName,mode:effectiveMatchType,arenaTier:higherTier(aTier,bTier)}); setNotice(''); setQuestionIndex(0); setAnswers({}); setTimeLeft(battleMinutes*60); setTimerRunning(false); setTimeExpired(false);}} className="w-full mt-5 py-4 rounded-2xl bg-indigo-600 text-white font-black hover:bg-indigo-700 transition flex items-center justify-center gap-2 shadow-sm"><Swords size={20}/> XÁC NHẬN TRẬN ĐẤU</button> : <motion.div initial={{opacity:0,y:10,scale:.98}} animate={{opacity:1,y:0,scale:1}} className="mt-5 overflow-hidden rounded-[24px] border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-indigo-50 shadow-lg">
             <div className="px-5 pt-5 pb-4 text-center">
               <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-3 py-1 text-xs font-black tracking-wide text-emerald-700"><span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"/> TRẬN ĐẤU ĐÃ SẴN SÀNG</div>
               <div className="mt-3 flex items-center justify-center gap-3 text-slate-900"><span className="text-xl md:text-2xl font-black">{battle.a}</span><span className="rounded-full bg-slate-900 px-3 py-1 text-sm font-black text-white">VS</span><span className="text-xl md:text-2xl font-black">{battle.b}</span></div>
