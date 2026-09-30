@@ -118,6 +118,9 @@ export function Arena() {
   const [teamA, setTeamA] = useState('Tổ 1');
   const [teamB, setTeamB] = useState('Tổ 2');
   const [teamNotice, setTeamNotice] = useState('');
+  const [teamBattle, setTeamBattle] = useState<{mode:'Đấu tổ'|'Tiếp sức';a:string;b:string}|null>(null);
+  const [teamQuestionIndex, setTeamQuestionIndex] = useState(0);
+  const [teamAnswers, setTeamAnswers] = useState<Record<number,{a?:string;b?:string;revealed?:boolean}>>({});
   const [teams, setTeams] = useState<Team[]>(() => { try { const raw=localStorage.getItem(STORAGE_KEY); if(raw){ const d=JSON.parse(raw); if(Array.isArray(d.teams)) return withTeamRanks(d.teams); } } catch{} return withTeamRanks([
     {name:'Tổ 1', points:320, wins:6, relay:2, rankDays:4},
     {name:'Tổ 2', points:295, wins:5, relay:1, rankDays:6},
@@ -326,6 +329,45 @@ export function Arena() {
     if (!Number.isFinite(delta) || delta===0) { setPointNotice('Chọn tổ và nhập số điểm khác 0.'); return; }
     setTeams(prev=>withTeamRanks(prev.map(t=>t.name===scoreTeamName?{...t,points:Math.max(0,t.points+delta)}:t),true));
     setPointNotice(`${scoreTeamName}: ${delta>0?'+':''}${delta} điểm tổ.`);
+  };
+
+
+  const startTeamBattle = () => {
+    if (teamA===teamB) { setTeamNotice('Vui lòng chọn hai tổ khác nhau.'); return; }
+    setTeamBattle({mode:teamMode,a:teamA,b:teamB});
+    setTeamQuestionIndex(0);
+    setTeamAnswers({});
+    setTeamNotice('');
+  };
+
+  const finishTeamBattle = async (finalA:number, finalB:number) => {
+    if(!teamBattle) return;
+    const isDraw=finalA===finalB;
+    const winnerName=isDraw?'':(finalA>finalB?teamBattle.a:teamBattle.b);
+    const reward=teamBattle.mode==='Tiếp sức'?40:30;
+    const drawReward=10;
+    const now=new Date().toISOString();
+    let nextTeams=teams.map(t=>{
+      if(isDraw && (t.name===teamBattle.a || t.name===teamBattle.b)) return {...t,points:t.points+drawReward};
+      if(t.name===winnerName) return {...t,points:t.points+reward,wins:t.wins+1,relay:t.relay+(teamBattle.mode==='Tiếp sức'?1:0)};
+      return t;
+    });
+    nextTeams=withTeamRanks(nextTeams,true);
+    setTeams(nextTeams);
+    const result=isDraw?'Hòa':`${winnerName} thắng`;
+    setHistory(h=>[{id:`tm${Date.now()}`,a:teamBattle.a,b:teamBattle.b,result,mode:teamBattle.mode,delta:isDraw?`+${drawReward} mỗi tổ`:`+${reward} điểm tổ`,time:new Date().toLocaleString('vi-VN')},...h]);
+    try {
+      const changed=nextTeams.filter(t=>t.name===teamBattle.a || t.name===teamBattle.b);
+      for(const t of changed){
+        await apiPost('saveTeam',{teamId:`TEAM_${t.name.replace(/\s+/g,'_').toUpperCase()}`,teamName:t.name,points:t.points,wins:t.wins,relayWins:t.relay,rank:t.lastRank||0,rankSince:t.rankSince||now,status:'ACTIVE',updatedAt:now});
+      }
+      setCloudStatus('online');
+      setTeamNotice(`Kết thúc ${teamBattle.mode}: ${result} • ${finalA}–${finalB} • ${isDraw?`mỗi tổ +${drawReward}`:`${winnerName} +${reward}`} điểm tổ • đã đồng bộ Google Sheet.`);
+    } catch(err){
+      console.error(err); setCloudStatus('offline');
+      setTeamNotice(`Kết thúc ${teamBattle.mode}: ${result} • ${finalA}–${finalB} • đã lưu trên máy, chưa đồng bộ Google Sheet.`);
+    }
+    setTeamBattle(null); setTeamQuestionIndex(0); setTeamAnswers({});
   };
 
 
@@ -642,21 +684,29 @@ export function Arena() {
     {active==='teams' && <div className="grid xl:grid-cols-[1.05fr_.95fr] gap-5">
       <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-xl font-black text-slate-900 flex items-center gap-2"><Users className="text-indigo-600"/> Đấu tổ & Tiếp sức</h2>
-        <p className="text-sm text-slate-500 mt-1">Thi đấu theo đúng Tổ 1–4 của lớp. Điểm của hoạt động nhóm được cộng cho tổ, không cộng vào bảng xếp hạng cá nhân.</p>
-        <div className="grid sm:grid-cols-2 gap-3 mt-5">
-          {(['Đấu tổ','Tiếp sức'] as const).map(m=><button key={m} onClick={()=>setTeamMode(m)} className={`p-4 rounded-2xl border-2 text-left font-black ${teamMode===m?'border-indigo-600 bg-indigo-50 text-indigo-800':'border-slate-200'}`}>{m==='Đấu tổ'?'🛡️':'🏃'} {m}<div className="text-xs font-medium text-slate-500 mt-1">{m==='Đấu tổ'?'Hai tổ đối đầu trực tiếp':'Các thành viên lần lượt hoàn thành từng chặng'}</div></button>)}
-        </div>
-        <div className="grid sm:grid-cols-2 gap-4 mt-5">
-          <label className="text-sm font-bold text-slate-700">Tổ thách đấu<select value={teamA} onChange={e=>setTeamA(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
-          <label className="text-sm font-bold text-slate-700">Tổ đối thủ<select value={teamB} onChange={e=>setTeamB(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
-        </div>
-        {teamMode==='Tiếp sức'&&<div className="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900"><b>Luật tiếp sức:</b> mỗi thành viên phụ trách một chặng. Chỉ khi chặng hiện tại được xác nhận đúng mới mở chặng tiếp theo. Giáo viên điều phối thứ tự thành viên của từng tổ.</div>}
-        <button onClick={()=>{if(teamA===teamB){setTeamNotice('Vui lòng chọn hai tổ khác nhau.');return;} setTeamNotice(`Đã tạo ${teamMode}: ${teamA} vs ${teamB}. Giáo viên có thể bắt đầu hoạt động.`)}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 text-white font-black">⚔️ BẮT ĐẦU {teamMode.toUpperCase()}</button>
+        <p className="text-sm text-slate-500 mt-1">Tổ 1–4 có điểm và thứ hạng riêng; kết quả không làm thay đổi hạng cá nhân, Guardian hay Champion.</p>
+        {!teamBattle ? <>
+          <div className="grid sm:grid-cols-2 gap-3 mt-5">
+            {(['Đấu tổ','Tiếp sức'] as const).map(m=><button key={m} onClick={()=>setTeamMode(m)} className={`p-4 rounded-2xl border-2 text-left transition ${teamMode===m?'border-indigo-600 bg-indigo-50 text-indigo-800 shadow-sm':'border-slate-200 hover:border-indigo-300'}`}><div className="flex items-center gap-3"><span className="text-2xl">{m==='Đấu tổ'?'🛡️':'🏃'}</span><div><div className="font-black">{m}</div><div className="text-xs font-medium text-slate-500 mt-1">{m==='Đấu tổ'?'Hai tổ đối đầu trực tiếp':'Trả lời nối tiếp qua từng chặng'}</div></div></div></button>)}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 mt-5">
+            <label className="text-sm font-bold text-slate-700">Tổ A<select value={teamA} onChange={e=>setTeamA(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
+            <label className="text-sm font-bold text-slate-700">Tổ B<select value={teamB} onChange={e=>setTeamB(e.target.value)} className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-3">{teams.map(t=><option key={t.name}>{t.name}</option>)}</select></label>
+          </div>
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700"><b>{teamMode==='Đấu tổ'?'Luật Đấu tổ:':'Luật Tiếp sức:'}</b> {teamMode==='Đấu tổ'?'Hai tổ cùng trả lời từng câu. Tổ có nhiều câu đúng hơn thắng trận.':'Hai tổ lần lượt vượt từng câu như các chặng tiếp sức. Kết quả tính theo tổng số chặng trả lời đúng.'} <span className="font-bold">Thắng {teamMode==='Đấu tổ'?'+30':'+40'} điểm tổ; hòa mỗi tổ +10.</span></div>
+          <button onClick={startTeamBattle} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black transition">⚔️ BẮT ĐẦU {teamMode.toUpperCase()}</button>
+        </> : (()=>{const q=battleQuestions[teamQuestionIndex]; const cur=teamAnswers[teamQuestionIndex]||{}; const letters=['A','B','C','D']; const scoreA=Object.entries(teamAnswers).filter(([i,v])=>v.revealed&&v.a===battleQuestions[Number(i)]?.correct).length; const scoreB=Object.entries(teamAnswers).filter(([i,v])=>v.revealed&&v.b===battleQuestions[Number(i)]?.correct).length; return <div className="mt-5 rounded-2xl border-2 border-indigo-200 overflow-hidden">
+          <div className="bg-gradient-to-r from-indigo-700 to-violet-700 text-white p-4"><div className="text-xs font-black tracking-widest opacity-80">{teamBattle.mode.toUpperCase()}</div><div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 mt-2"><div><div className="font-black text-lg">{teamBattle.a}</div><div className="text-3xl font-black">{scoreA}</div></div><div className="font-black opacity-70">VS</div><div className="text-right"><div className="font-black text-lg">{teamBattle.b}</div><div className="text-3xl font-black">{scoreB}</div></div></div></div>
+          <div className="p-5"><div className="flex justify-between gap-3"><div className="font-black text-indigo-700">CÂU {teamQuestionIndex+1}/{battleQuestions.length}</div><div className="text-xs font-bold text-slate-500">{teamBattle.mode==='Tiếp sức'?`CHẶNG ${teamQuestionIndex+1}`:'ĐẤU TỔ'}</div></div><div className="mt-4 text-lg font-bold text-slate-900"><MathText text={q.q}/></div><div className="grid sm:grid-cols-2 gap-2 mt-4">{q.options.map((o,i)=><div key={i} className="rounded-xl bg-slate-50 border border-slate-200 p-3"><b>{letters[i]}.</b> <MathText text={o}/></div>)}</div>
+          <div className="grid sm:grid-cols-2 gap-4 mt-5">{(['a','b'] as const).map(side=><div key={side} className="rounded-xl border border-slate-200 p-3"><div className="font-black text-sm">{side==='a'?teamBattle.a:teamBattle.b}</div><div className="grid grid-cols-4 gap-2 mt-2">{letters.map(L=><button disabled={cur.revealed} key={L} onClick={()=>setTeamAnswers(prev=>({...prev,[teamQuestionIndex]:{...prev[teamQuestionIndex],[side]:L}}))} className={`py-2 rounded-lg border-2 font-black ${cur[side]===L?'border-indigo-600 bg-indigo-600 text-white':'border-slate-200'}`}>{L}</button>)}</div></div>)}</div>
+          {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>setTeamAnswers(prev=>({...prev,[teamQuestionIndex]:{...prev[teamQuestionIndex],revealed:true}}))} className="w-full mt-4 py-3 rounded-xl bg-slate-900 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-4 rounded-xl bg-emerald-50 border border-emerald-200 p-4"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div>{teamQuestionIndex<battleQuestions.length-1?<button onClick={()=>setTeamQuestionIndex(v=>v+1)} className="mt-3 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-black">{teamBattle.mode==='Tiếp sức'?'CHẶNG TIẾP THEO':'CÂU TIẾP THEO'} →</button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0);const finalB=scoreB+(cur.b===q.correct?1:0);void finishTeamBattle(finalA,finalB)}} className="mt-3 px-4 py-2.5 rounded-xl bg-amber-500 text-slate-950 font-black">🏆 KẾT THÚC TRẬN</button>}</div>}
+          <button onClick={()=>{setTeamBattle(null);setTeamQuestionIndex(0);setTeamAnswers({})}} className="mt-4 text-sm font-bold text-slate-500">← Hủy trận / chọn lại tổ</button></div>
+        </div>})()}
         {teamNotice&&<div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 p-4 font-bold text-indigo-800">{teamNotice}</div>}
       </section>
       <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="p-5 border-b"><h3 className="font-black text-slate-900">🏆 Xếp hạng các tổ</h3><p className="text-xs text-slate-500 mt-1">Đấu tổ và tiếp sức chỉ tác động bảng xếp hạng tổ.</p></div>
-        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} lần thắng tiếp sức • {daysHeld(t.rankSince,t.rankDays)} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
+        <div className="p-5 border-b"><h3 className="font-black text-slate-900">🏆 Xếp hạng các tổ</h3><p className="text-xs text-slate-500 mt-1">Điểm tổ tách hoàn toàn khỏi xếp hạng cá nhân.</p></div>
+        <div className="divide-y">{[...teams].sort((a,b)=>b.points-a.points).map((t,i)=><div key={t.name} className="p-4 flex items-center gap-4"><div className="w-9 font-black text-center">{i===0?'👑':`#${i+1}`}</div><div className="flex-1"><div className="font-black text-slate-800">{t.name}</div><div className="text-xs text-slate-500 mt-1">{t.wins} trận thắng • {t.relay} thắng tiếp sức • {daysHeld(t.rankSince,t.rankDays)} ngày giữ hạng</div></div><div className="text-right"><div className="font-black text-indigo-700">{t.points}</div><div className="text-xs text-slate-400">điểm tổ</div></div></div>)}</div>
       </section>
     </div>}
 
