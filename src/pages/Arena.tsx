@@ -11,8 +11,25 @@ type Team = { name:string; points:number; wins:number; relay:number; rankDays:nu
 const STORAGE_KEY = 'mathArenaData';
 const STORAGE_SCHEMA = 1;
 const API_URL = 'https://script.google.com/macros/s/AKfycbxoeZqJnRNGNbrCnCvjBXASmcDLEydrxASxE3ybYNVdvEf5Hte5dIM4x-91WKOVVXJxRQ/exec';
-async function apiGet(action:string){ const r=await fetch(`${API_URL}?action=${encodeURIComponent(action)}`,{cache:'no-store'}); const j=await r.json(); if(!j?.success) throw new Error(j?.message||'API lỗi'); return j; }
-async function apiPost(action:string,data:any){ const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,data})}); const j=await r.json(); if(!j?.success) throw new Error(j?.message||'API lỗi'); return j; }
+
+async function apiGet(action:string) {
+  const res = await fetch(`${API_URL}?action=${encodeURIComponent(action)}`, { cache:'no-store' });
+  if (!res.ok) throw new Error(`API GET ${res.status}`);
+  const json = await res.json();
+  if (!json?.success) throw new Error(json?.message || 'API trả về lỗi');
+  return json;
+}
+async function apiPost(action:string, data:any) {
+  const res = await fetch(API_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action,data})
+  });
+  if (!res.ok) throw new Error(`API POST ${res.status}`);
+  const json = await res.json();
+  if (!json?.success) throw new Error(json?.message || 'API trả về lỗi');
+  return json;
+}
 const daysAgoIso = (days:number) => new Date(Date.now() - Math.max(0, days) * 86400000).toISOString();
 const daysHeld = (iso?:string, fallback=0) => iso ? Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/86400000)) : fallback;
 function withPlayerRanks(list:Player[], resetChanged=false){ const order=[...list].sort((a,b)=>b.arena-a.arena); const ranks=new Map(order.map((p,i)=>[p.id,i+1])); const now=new Date().toISOString(); return list.map(p=>{ const nr=ranks.get(p.id)||1; const changed=resetChanged && p.lastRank!=null && p.lastRank!==nr; return {...p,lastRank:nr,rankSince:changed?now:(p.rankSince||daysAgoIso(p.rankDays)),rankDays:daysHeld(changed?now:(p.rankSince||daysAgoIso(p.rankDays)),p.rankDays)}; }); }
@@ -145,8 +162,46 @@ export function Arena() {
   const sorted = useMemo(() => [...players].sort((a,b) => b.arena-a.arena), [players]);
 
   useEffect(() => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify({schemaVersion:STORAGE_SCHEMA,players,teams,history,savedAt:new Date().toISOString()})); } catch{} }, [players,teams,history]);
-  useEffect(()=>{ let stop=false; (async()=>{ try{ const [sr,pr]=await Promise.all([apiGet('students'),apiGet('profiles')]); if(stop)return; const students=Array.isArray(sr.data)?sr.data:[]; const profiles=Array.isArray(pr.data)?pr.data:[]; if(students.length&&profiles.length){ const sm=new Map(students.map((x:any)=>[String(x.studentId),x])); const tm:Record<string,Tier>={YEU:'Tân binh',TRUNGBINH:'Đồng',KHA:'Bạc',GIOI:'Vàng'}; const remote:Player[]=profiles.map((p:any)=>{const m:any=sm.get(String(p.studentId))||{}; return {id:String(p.studentId),name:String(m.fullName||p.studentId),role:(['Học sinh','Lớp trưởng','Lớp phó học tập','Bí thư'].includes(m.classRole)?m.classRole:'Học sinh') as Role,tier:tm[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:(p.guardian===true||String(p.guardian).toUpperCase()==='TRUE')?'Người giữ ải':undefined};}); setPlayers(withPlayerRanks(remote)); if(remote[0]){setScoreStudentId(remote[0].id);setChallenger(remote[0].id);if(remote[1])setOpponent(remote[1].id);} } setCloudStatus('online'); }catch(e){console.error(e);if(!stop)setCloudStatus('offline');} })(); return()=>{stop=true}; },[]);
-  const addStudent = async () => { const name=newStudentName.trim(); const pts=Math.max(0,Math.trunc(Number(newStudentPoints)||0)); if(!name){setPointNotice('Nhập họ tên học sinh cần thêm.');return;} if(players.some(p=>p.name.toLowerCase()===name.toLowerCase())){setPointNotice('Học sinh này đã có trong danh sách.');return;} const tempId=`p${Date.now()}`; setPlayers(prev=>withPlayerRanks([...prev,{id:tempId,name,role:'Học sinh',tier:'Tân binh',pos:1,arena:pts,xp:0,wins:0,rankDays:0,rankSince:new Date().toISOString()}],true)); setScoreStudentId(tempId); setNewStudentName(''); setNewStudentPoints(0); setPointNotice(`Đang lưu ${name} lên Google Sheet...`); try{ const saved=await apiPost('addStudent',{fullName:name,points:pts,arenaLevel:'YEU'}); const realId=String(saved.studentId||tempId); setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===tempId?{...p,id:realId}:p),true)); setScoreStudentId(realId); setCloudStatus('online'); setPointNotice(`Đã thêm ${name} với ${pts} điểm và lưu vào Google Sheet.`); }catch(e){console.error(e);setCloudStatus('offline');setPointNotice(`Đã lưu ${name} trên máy; chưa đồng bộ được Google Sheet.`);} };
+
+  useEffect(() => {
+    let cancelled=false;
+    (async()=>{
+      try {
+        const [studentsRes, profilesRes] = await Promise.all([apiGet('students'), apiGet('profiles')]);
+        if (cancelled) return;
+        const students=Array.isArray(studentsRes.data)?studentsRes.data:[];
+        const profiles=Array.isArray(profilesRes.data)?profilesRes.data:[];
+        if(students.length && profiles.length){
+          const byId=new Map(students.map((s:any)=>[String(s.studentId),s]));
+          const tierMap:Record<string,Tier>={YEU:'Tân binh',TRUNGBINH:'Đồng',KHA:'Bạc',GIOI:'Vàng'};
+          const remotePlayers:Player[]=profiles.map((p:any)=>{
+            const s:any=byId.get(String(p.studentId))||{};
+            const role=(['Học sinh','Lớp trưởng','Lớp phó học tập','Bí thư'].includes(s.classRole)?s.classRole:'Học sinh') as Role;
+            return {id:String(p.studentId),name:String(s.fullName||p.studentId),role,tier:tierMap[String(p.arenaLevel)]||'Tân binh',pos:Number(p.rank)||1,arena:Number(p.points)||0,xp:0,wins:Number(p.wins)||0,rankDays:daysHeld(p.rankSince,0),rankSince:p.rankSince||new Date().toISOString(),lastRank:Number(p.rank)||undefined,shield:Number(p.shieldCount)||0,placement:Number(p.protectionMatches)||0,guardian:p.guardian===true||String(p.guardian).toUpperCase()==='TRUE'?'Người giữ ải':undefined};
+          });
+          setPlayers(withPlayerRanks(remotePlayers));
+          if(remotePlayers[0]){setScoreStudentId(remotePlayers[0].id);setChallenger(remotePlayers[0].id);if(remotePlayers[1])setOpponent(remotePlayers[1].id);}
+        }
+        setCloudStatus('online');
+      } catch(err){ console.error(err); if(!cancelled)setCloudStatus('offline'); }
+    })();
+    return ()=>{cancelled=true};
+  }, []);
+  const addStudent = async () => {
+    const name=newStudentName.trim(); const pts=Math.max(0,Math.trunc(Number(newStudentPoints)||0));
+    if(!name){setPointNotice('Nhập họ tên học sinh cần thêm.');return;}
+    if(players.some(p=>p.name.toLowerCase()===name.toLowerCase())){setPointNotice('Học sinh này đã có trong danh sách.');return;}
+    const tempId=`p${Date.now()}`;
+    setPlayers(prev=>withPlayerRanks([...prev,{id:tempId,name,role:'Học sinh',tier:'Tân binh',pos:1,arena:pts,xp:0,wins:0,rankDays:0,rankSince:new Date().toISOString()}],true));
+    setScoreStudentId(tempId); setNewStudentName(''); setNewStudentPoints(0);
+    try {
+      const saved=await apiPost('addStudent',{fullName:name,points:pts,arenaLevel:'YEU'});
+      const realId=String(saved.studentId||tempId);
+      setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===tempId?{...p,id:realId}:p),true));
+      setScoreStudentId(realId); setCloudStatus('online');
+      setPointNotice(`Đã thêm ${name} với ${pts} điểm và lưu vào Google Sheet.`);
+    } catch(err){console.error(err);setCloudStatus('offline');setPointNotice(`Đã lưu ${name} trên máy; chưa đồng bộ được Google Sheet.`);}
+  };
 
   const challengeMeta = useMemo(() => {
     const a = challenger === 'manual' ? undefined : players.find(p => p.id === challenger);
@@ -197,18 +252,61 @@ export function Arena() {
   }, [timeLeft, inBattle, timerRunning]);
 
   const addStudentPoints = async () => {
-    const delta = Math.trunc(Number(studentPointDelta));
-    const target = players.find(p=>p.id===scoreStudentId);
-    if (!target || !Number.isFinite(delta) || delta===0) { setPointNotice('Chọn học sinh và nhập số điểm khác 0.'); return; }
+    const delta=Math.trunc(Number(studentPointDelta));
+    const target=players.find(p=>p.id===scoreStudentId);
+    if(!target||!Number.isFinite(delta)||delta===0){setPointNotice('Chọn học sinh và nhập số điểm khác 0.');return;}
     setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===scoreStudentId?{...p,arena:Math.max(0,p.arena+delta)}:p),true));
-    try { await apiPost('adjustPoints',{studentId:scoreStudentId,changePoints:delta,reason:'GV điều chỉnh trên Đấu trường',createdBy:'TEACHER'}); setCloudStatus('online'); setPointNotice(`${target.name}: ${delta>0?'+':''}${delta} điểm • đã lưu Google Sheet.`); }
-    catch(e){ console.error(e); setCloudStatus('offline'); setPointNotice(`${target.name}: ${delta>0?'+':''}${delta} điểm • đã lưu trên máy, chưa đồng bộ Google Sheet.`); }
+    try {
+      await apiPost('adjustPoints',{studentId:scoreStudentId,changePoints:delta,reason:'GV điều chỉnh trên Đấu trường',createdBy:'TEACHER'});
+      setCloudStatus('online'); setPointNotice(`${target.name}: ${delta>0?'+':''}${delta} điểm • đã lưu Google Sheet.`);
+    } catch(err){console.error(err);setCloudStatus('offline');setPointNotice(`${target.name}: ${delta>0?'+':''}${delta} điểm • đã lưu trên máy, chưa đồng bộ Google Sheet.`);}
   };
   const addTeamPoints = () => {
     const delta = Math.trunc(Number(teamPointDelta));
     if (!Number.isFinite(delta) || delta===0) { setPointNotice('Chọn tổ và nhập số điểm khác 0.'); return; }
     setTeams(prev=>withTeamRanks(prev.map(t=>t.name===scoreTeamName?{...t,points:Math.max(0,t.points+delta)}:t),true));
     setPointNotice(`${scoreTeamName}: ${delta>0?'+':''}${delta} điểm tổ.`);
+  };
+
+
+  const finishBattle = async (finalA:number, finalB:number) => {
+    if(!battle) return;
+    const result=finalA===finalB?'Hòa':finalA>finalB?`${battle.a} thắng`:`${battle.b} thắng`;
+    playArenaSound('finish');
+    const playerA=players.find(p=>p.name===battle.a);
+    const playerB=players.find(p=>p.name===battle.b);
+    const winner=finalA===finalB?undefined:(finalA>finalB?playerA:playerB);
+    if(winner){
+      setPlayers(prev=>withPlayerRanks(prev.map(p=>p.id===winner.id?{...p,wins:(p.wins||0)+1}:p),false));
+    }
+    const localMatch={id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:new Date().toLocaleString('vi-VN')};
+    setHistory(h=>[localMatch,...h]);
+    try {
+      await apiPost('saveMatch',{
+        matchType:battle.mode,
+        arenaLevel:battle.arenaTier,
+        playerAId:playerA?.id||'',
+        playerAName:battle.a,
+        playerBId:playerB?.id||'',
+        playerBName:battle.b,
+        winnerId:winner?.id||'',
+        winnerName:winner?.name||'',
+        totalQuestions:battleQuestions.length,
+        scoreA:finalA,
+        scoreB:finalB,
+        durationMinutes:battleMinutes,
+        startedAt:new Date(Date.now()-(battleMinutes*60-timeLeft)*1000).toISOString(),
+        endedAt:new Date().toISOString(),
+        status:'COMPLETED',
+        createdBy:'TEACHER'
+      });
+      setCloudStatus('online');
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB} • đã lưu Google Sheet`);
+    } catch(err){
+      console.error(err); setCloudStatus('offline');
+      setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB} • đã lưu trên máy, chưa đồng bộ Google Sheet`);
+    }
+    setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({});
   };
 
 
@@ -348,7 +446,7 @@ export function Arena() {
           <div className="mt-6 text-lg md:text-xl font-bold text-slate-900 leading-8"><MathText text={q.q}/></div>
           <div className="grid md:grid-cols-2 gap-3 mt-6">{q.options.map((opt,i)=><div key={i} className={`rounded-2xl border-2 p-4 flex gap-3 items-center ${cur.revealed&&letters[i]===q.correct?'border-emerald-400 bg-emerald-50':'border-slate-200 bg-slate-50'}`}><span className="w-9 h-9 rounded-xl bg-white border flex items-center justify-center font-black text-indigo-700">{letters[i]}</span><MathText text={opt}/></div>)}</div>
           <div className="grid md:grid-cols-2 gap-4 mt-7">{(['a','b'] as const).map(side=><div key={side} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">Đáp án của {side==='a'?battle.a:battle.b}</div><div className="grid grid-cols-4 gap-2 mt-3">{letters.map(L=><button disabled={cur.revealed} key={L} onClick={()=>setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],[side]:L}}))} className={`py-3 rounded-xl border-2 font-black transition ${cur[side]===L?'border-indigo-600 bg-indigo-600 text-white':'border-slate-200 hover:border-indigo-300'}`}>{L}</button>)}</div></div>)}</div>
-          {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>{setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],revealed:true}}));playArenaSound('reveal')}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div><b>{battle.a}:</b> {cur.a===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div><div><b>{battle.b}:</b> {cur.b===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div></div>{questionIndex<battleQuestions.length-1?<button onClick={()=>{setQuestionIndex(v=>v+1);playArenaSound('next')}} className="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2">CÂU TIẾP THEO <ArrowRight size={18}/></button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0); const finalB=scoreB+(cur.b===q.correct?1:0); const result=finalA===finalB?'Hòa':finalA>finalB?`${battle.a} thắng`:`${battle.b} thắng`; playArenaSound('finish'); const winnerName=finalA===finalB?'':(finalA>finalB?battle.a:battle.b); if(winnerName){ setPlayers(prev=>withPlayerRanks(prev.map(p=>p.name===winnerName?{...p,wins:(p.wins||0)+1}:p),false)); } setHistory(h=>[{id:`m${Date.now()}`,a:battle.a,b:battle.b,result,mode:battle.mode,delta:`${finalA}–${finalB}`,time:new Date().toLocaleString('vi-VN')},...h]); setInBattle(false); setBattle(null); setQuestionIndex(0); setAnswers({}); setNotice(`Kết thúc trận: ${result} • ${finalA}–${finalB}`);}} className="mt-4 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center gap-2"><Trophy size={18}/> KẾT THÚC TRẬN</button>}</div>}
+          {!cur.revealed?<button disabled={!cur.a||!cur.b} onClick={()=>{setAnswers(prev=>({...prev,[questionIndex]:{...prev[questionIndex],revealed:true}}));playArenaSound('reveal')}} className="w-full mt-5 py-3.5 rounded-xl bg-indigo-600 disabled:bg-slate-300 text-white font-black">XÁC NHẬN CÂU TRẢ LỜI</button>:<div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5"><div className="font-black text-emerald-800">✓ Đáp án đúng: {q.correct}</div><div className="grid sm:grid-cols-2 gap-2 mt-3 text-sm"><div><b>{battle.a}:</b> {cur.a===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div><div><b>{battle.b}:</b> {cur.b===q.correct?'✓ +1 điểm':'✕ 0 điểm'}</div></div>{questionIndex<battleQuestions.length-1?<button onClick={()=>{setQuestionIndex(v=>v+1);playArenaSound('next')}} className="mt-4 px-5 py-3 rounded-xl bg-slate-900 text-white font-black flex items-center gap-2">CÂU TIẾP THEO <ArrowRight size={18}/></button>:<button onClick={()=>{const finalA=scoreA+(cur.a===q.correct?1:0); const finalB=scoreB+(cur.b===q.correct?1:0); void finishBattle(finalA,finalB);}} className="mt-4 px-5 py-3 rounded-xl bg-amber-500 text-slate-950 font-black flex items-center gap-2"><Trophy size={18}/> KẾT THÚC TRẬN</button>}</div>}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t pt-5">
             <button onClick={()=>setInBattle(false)} className="text-sm font-bold text-slate-500 hover:text-slate-800">← Quay lại điều khiển trận</button>
             <div className="flex gap-2"><button onClick={()=>setTimerRunning(v=>!v)} disabled={timeLeft===0} className="px-4 py-2 rounded-xl border border-slate-200 font-bold text-slate-700">{timerRunning?'⏸ Tạm dừng':'▶ Tiếp tục'}</button><button onClick={()=>{setTimeLeft(battleMinutes*60);setTimeExpired(false);setTimerRunning(true)}} className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold">↻ Đặt lại giờ</button></div>
@@ -394,7 +492,7 @@ export function Arena() {
 
     {active==='teacher' && <section className="space-y-5">
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
-        <div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-xl font-black text-slate-900">Điểm thi đua do giáo viên điều chỉnh</h2><p className="text-slate-500 mt-1">Cộng hoặc trừ điểm trực tiếp cho cá nhân và tổ. Điểm cập nhật ngay vào bảng xếp hạng tương ứng.</p></div><div className={`h-fit rounded-full px-3 py-1.5 text-xs font-black ${cloudStatus==='online'?'bg-emerald-50 text-emerald-700':cloudStatus==='offline'?'bg-amber-50 text-amber-700':'bg-slate-100 text-slate-600'}`}>{cloudStatus==='online'?'● Google Sheet đã kết nối':cloudStatus==='offline'?'● Đang dùng dữ liệu trên máy':'● Đang kiểm tra kết nối...'}</div></div>
+        <div className="flex flex-wrap justify-between gap-3"><div><h2 className="text-xl font-black text-slate-900">Điểm thi đua do giáo viên điều chỉnh</h2><p className="text-slate-500 mt-1">Cộng hoặc trừ điểm trực tiếp cho cá nhân và tổ. Điểm cập nhật ngay vào bảng xếp hạng tương ứng.</p></div></div>
         <div className="mt-6 rounded-2xl border-2 border-emerald-100 bg-emerald-50/50 p-5"><div className="font-black text-emerald-900">➕ Thêm học sinh</div><p className="mt-1 text-sm text-emerald-800/70">Học sinh thêm mới được lưu vào Google Sheet và đồng thời giữ bản dự phòng trên máy.</p><div className="grid sm:grid-cols-[1fr_150px_auto] gap-3 mt-4"><input value={newStudentName} onChange={e=>setNewStudentName(e.target.value)} placeholder="Nhập họ tên học sinh" className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-bold"/><input type="number" min="0" value={newStudentPoints} onChange={e=>setNewStudentPoints(Number(e.target.value))} placeholder="Điểm ban đầu" className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-black"/><button onClick={addStudent} className="rounded-xl bg-emerald-600 px-5 py-3 text-white font-black">THÊM HỌC SINH</button></div></div>
         <div className="grid lg:grid-cols-2 gap-4 mt-6">
           <div className="rounded-2xl border-2 border-indigo-100 bg-indigo-50/40 p-5"><div className="font-black text-indigo-900">👤 Điểm cá nhân</div><div className="grid sm:grid-cols-[1fr_130px] gap-3 mt-4"><select value={scoreStudentId} onChange={e=>setScoreStudentId(e.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-bold">{players.map(p=><option key={p.id} value={p.id}>{p.name} • {p.arena} điểm</option>)}</select><input type="number" value={studentPointDelta} onChange={e=>setStudentPointDelta(Number(e.target.value))} className="rounded-xl border border-slate-200 bg-white px-3 py-3 font-black" aria-label="Điểm cộng hoặc trừ cá nhân" /></div><div className="text-xs text-slate-500 mt-2">Nhập số dương để cộng, số âm để trừ.</div><button onClick={addStudentPoints} className="mt-4 w-full rounded-xl bg-indigo-600 py-3 text-white font-black">CẬP NHẬT ĐIỂM CÁ NHÂN</button></div>
