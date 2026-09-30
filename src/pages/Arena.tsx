@@ -68,7 +68,7 @@ const modes = [
   { icon:Route, title:'Thách đấu vượt cấp', desc:'Đủ điều kiện để đánh cửa ải hoặc Top của cấp trên.', tag:'Leo hạng' },
   { icon:Medal, title:'Thách đấu Ban cán sự', desc:'Chức vụ độc lập với thứ hạng; thưởng theo độ khó thực tế.', tag:'Đặc biệt' },
   { icon:Shield, title:'Người giữ ải', desc:'Giáo viên chỉ định Guardian cho từng cổng hoặc từng tuần.', tag:'Guardian' },
-  { icon:Crown, title:'Tranh ngôi Champion', desc:'Top 3 tiến dần #3 → #2 → #1, có Vé Tranh Ngôi.', tag:'Top' },
+  { icon:Crown, title:'Tranh Hạng 1 & Champion', desc:'Hạng 1 thuộc từng cấp; Champion là danh hiệu riêng của toàn lớp.', tag:'Top' },
   { icon:Users, title:'Đấu tổ & Tiếp sức', desc:'4 tổ công thành, giữ thành hoặc giải nối tiếp từng chặng.', tag:'Đồng đội' },
 ];
 
@@ -223,11 +223,12 @@ export function Arena() {
     const b = opponent === 'manual' ? undefined : players.find(p => p.id === opponent);
     if (!a || !b) return { type:'1vs1 tự do', reason:'Học sinh nhập thủ công: giáo viên xác nhận trận đấu trực tiếp.', icon:'⚔️' };
     const champion = sorted[0];
-    if (b.id === champion?.id) return { type:'Tranh ngôi Champion', reason:`${b.name} đang là #1 toàn Đấu trường.`, icon:'👑' };
+    if (a.tier === b.tier && b.pos === 1) return { type:`Tranh Hạng 1 ${b.tier}`, reason:`${b.name} đang giữ Hạng 1 trong cấp ${b.tier}. Đây không phải Champion toàn lớp.`, icon:'🥇' };
+    if (b.id === champion?.id && a.tier !== b.tier) return { type:'Thách đấu Champion toàn lớp', reason:`${b.name} đang giữ danh hiệu Champion toàn lớp. Đây là danh hiệu riêng, khác Hạng 1 từng cấp.`, icon:'👑' };
     if (b.guardian) return { type:'Thách đấu Người giữ ải', reason:`${b.name} đang giữ ${b.guardian}.`, icon:'🛡️' };
     if (b.role !== 'Học sinh') return { type:'Thách đấu Ban cán sự', reason:`${b.name} đang giữ vai trò ${b.role}.`, icon:'🎖️' };
     if (a.tier !== b.tier) return { type:'Thách đấu vượt cấp', reason:`${a.name} (${a.tier}) đang thách ${b.name} (${b.tier}).`, icon:'🚀' };
-    return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}.`, icon:'⚔️' };
+    return { type:'1vs1 cùng cấp', reason:`Hai học sinh cùng cấp ${a.tier}; Hạng ${a.pos} đấu Hạng ${b.pos}.`, icon:'⚔️' };
   }, [challenger, opponent, players, sorted]);
 
   const effectiveMatchType = matchTypeOverride || challengeMeta.type;
@@ -409,7 +410,8 @@ export function Arena() {
                       <option>Thách đấu vượt cấp</option>
                       <option>Thách đấu Ban cán sự</option>
                       <option>Thách đấu Người giữ ải</option>
-                      <option>Tranh ngôi Champion</option>
+                      <option>Tranh Hạng 1 cùng cấp</option>
+                      <option>Thách đấu Champion toàn lớp</option>
                       <option>1vs1 tự do</option>
                     </select>
                   </label>
@@ -518,7 +520,7 @@ export function Arena() {
       <div className="bg-white rounded-2xl border p-6 shadow-sm">
       <div className="flex flex-wrap justify-between gap-3"><h2 className="text-xl font-black text-slate-900">Thiết lập Đấu trường dành cho giáo viên</h2></div><p className="text-slate-500 mt-1">Các luật dưới đây là cấu hình của Đấu trường; dữ liệu sẽ được đồng bộ qua backend ở giai đoạn kết nối.</p>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-        {[['Luật trận','Chính xác trước • thời gian phá hòa'],['Phạm vi thách đấu','Cùng cấp: tối đa 3 bậc phía trên'],['Vượt cấp','Mặc định: người cuối cấp trên'],['Đại Thách Đấu','Cho phép Top cấp dưới thách Top cấp trên'],['Bảo hộ','1 lượt miễn + 3 trận định vị'],['Guardian','GV chỉ định, đổi theo tuần'],['Champion','Tự động = #1 thực tế'],['Ban cán sự','Vai trò riêng, không nâng hạng tự động'],['Đấu tổ','4 tổ • tiếp sức • công/giữ thành']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">{a}</div><div className="text-sm text-slate-500 mt-2">{b}</div></div>)}
+        {[['Luật trận','Chính xác trước • thời gian phá hòa'],['Phạm vi thách đấu','Cùng cấp: tối đa 3 bậc phía trên'],['Vượt cấp','Mặc định: người cuối cấp trên'],['Đại Thách Đấu','Cho phép Top cấp dưới thách Top cấp trên'],['Bảo hộ','1 lượt miễn + 3 trận định vị'],['Guardian','GV chỉ định, đổi theo tuần'],['Champion toàn lớp','Danh hiệu riêng, không đồng nhất với Hạng 1 từng cấp'],['Ban cán sự','Vai trò riêng, không nâng hạng tự động'],['Đấu tổ','4 tổ • tiếp sức • công/giữ thành']].map(([a,b])=><div key={a} className="rounded-2xl border border-slate-200 p-4"><div className="font-black text-slate-800">{a}</div><div className="text-sm text-slate-500 mt-2">{b}</div></div>)}
       </div>
       </div>
     </section>}
