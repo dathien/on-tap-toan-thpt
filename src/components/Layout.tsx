@@ -1,3 +1,35 @@
+import React, { useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAppStore } from '../store/useAppStore';
+import { 
+  LayoutDashboard, Gem, 
+  BookOpen,
+  Compass,
+  Database, Swords, 
+  FileEdit, 
+  ClipboardCheck, 
+  FlaskConical, 
+  BarChart3, 
+  Users, 
+  Library, 
+  Settings,
+  Menu,
+  X
+} from 'lucide-react';
+import clsx from 'clsx';
+
+const mainNavItems = [
+  { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, path: '/' },
+  { id: 'review', label: 'Ôn tập', icon: BookOpen, path: '/review' },
+  { id: 'roadmap', label: 'Lộ trình tự học', icon: Compass, path: '/roadmap' },
+  { id: 'bank', label: 'Ngân hàng câu hỏi', icon: Database, path: '/bank' },
+  { id: 'arena', label: 'Đấu trường Tri thức', icon: Swords, path: '/arena' },
+  { id: 'create', label: 'Tạo đề', icon: FileEdit, path: '/create' },
+  { id: 'materials', label: 'Kho đề thi', icon: Library, path: '/materials' },
+  { id: 'exam', label: 'Kiểm tra - Thi', icon: ClipboardCheck, path: '/exam' },
+  { id: 'lab', label: 'Phòng Lab Toán học', icon: FlaskConical, path: '/lab' },
+  { id: 'treasure', label: 'Kho báu Toán học', icon: Gem, path: '/treasure' },
+  { id: 'results', label: 'Kết quả học tập', icon: BarChart3, path: '/results' },
   { id: 'classes', label: 'Lớp học', icon: Users, path: '/classes' },
   { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
 ];
@@ -17,12 +49,16 @@ export function Layout() {
         </button>
       </div>
 
+      <style>{`
+        .arena-sidebar-nav { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        .arena-sidebar-nav::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+      `}</style>
       {/* Sidebar */}
       <aside className={clsx(
         "bg-[#1F2A44] text-slate-300 w-64 flex-shrink-0 flex flex-col fixed md:sticky top-0 h-[100dvh] overflow-hidden z-50 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none",
         isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
-        <div className="p-6 pb-2 hidden md:block border-b border-white/10 mb-4 flex-shrink-0">
+        <div className="px-4 pt-4 pb-3 hidden md:block border-b border-white/10 flex-shrink-0">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold">GV</div>
             <h1 className="text-xl font-bold text-white tracking-tight leading-tight">{settings.appName}</h1>
@@ -30,15 +66,15 @@ export function Layout() {
           <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider mb-4 line-clamp-2">{settings.description}</p>
         </div>
 
-        <nav className="flex-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden mt-2 md:mt-0 min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <ul className="space-y-0.5 px-3 pb-3">
+        <nav className="arena-sidebar-nav flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+          <ul className="space-y-0.5 px-2 pb-2">
             {mainNavItems.map((item) => (
               <li key={item.id}>
                 <NavLink
                   to={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) => clsx(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm min-h-10",
+                    "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 text-sm min-h-[36px]",
                     isActive ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-900/20" : "hover:bg-white/10 hover:text-white font-medium"
                   )}
                 >
