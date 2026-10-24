@@ -1,36 +1,3 @@
-import React, { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { useAppStore } from '../store/useAppStore';
-import { 
-  LayoutDashboard, Gem, 
-  BookOpen,
-  Compass,
-  Database, 
-  FileEdit, 
-  ClipboardCheck, 
-  FlaskConical, 
-  BarChart3, 
-  Users, 
-  Library, 
-  Settings,
-  Menu,
-  X,
-  Trophy
-} from 'lucide-react';
-import clsx from 'clsx';
-
-const mainNavItems = [
-  { id: 'dashboard', label: 'Tổng quan', icon: LayoutDashboard, path: '/' },
-  { id: 'review', label: 'Ôn tập', icon: BookOpen, path: '/review' },
-  { id: 'roadmap', label: 'Lộ trình tự học', icon: Compass, path: '/roadmap' },
-  { id: 'bank', label: 'Ngân hàng câu hỏi', icon: Database, path: '/bank' },
-  { id: 'create', label: 'Tạo đề', icon: FileEdit, path: '/create' },
-  { id: 'materials', label: 'Kho đề thi', icon: Library, path: '/materials' },
-  { id: 'exam', label: 'Kiểm tra - Thi', icon: ClipboardCheck, path: '/exam' },
-  { id: 'lab', label: 'Phòng Lab Toán học', icon: FlaskConical, path: '/lab' },
-  { id: 'treasure', label: 'Kho báu Toán học', icon: Gem, path: '/treasure' },
-  { id: 'arena', label: 'Đấu trường Tri thức', icon: Trophy, path: '/arena' },
-  { id: 'results', label: 'Kết quả học tập', icon: BarChart3, path: '/results' },
   { id: 'classes', label: 'Lớp học', icon: Users, path: '/classes' },
   { id: 'settings', label: 'Cài đặt', icon: Settings, path: '/settings' },
 ];
@@ -44,7 +11,7 @@ export function Layout() {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans">
       {/* Mobile Header */}
         <div className="md:hidden flex items-center justify-between p-4 bg-[#1F2A44] text-white">
-        <div><div className="font-bold text-lg">{settings.appName}</div><div className="text-[10px] text-indigo-200 font-semibold">GV.Hồ Nguyễn Đa Thiện</div></div>
+        <div className="font-bold text-lg">{settings.appName}</div>
         <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2">
           {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -60,25 +27,24 @@ export function Layout() {
             <div className="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold">GV</div>
             <h1 className="text-xl font-bold text-white tracking-tight leading-tight">{settings.appName}</h1>
           </div>
-          <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider line-clamp-2">{settings.description}</p>
-          <p className="text-xs text-slate-300 mt-2 mb-4 font-semibold tracking-wide">GV.Hồ Nguyễn Đa Thiện</p>
+          <p className="text-xs text-indigo-300 mt-1 uppercase tracking-wider mb-4 line-clamp-2">{settings.description}</p>
         </div>
 
-        <nav className="flex-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden mt-4 md:mt-0 min-h-0">
-          <ul className="space-y-1 px-3">
+        <nav className="flex-1 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] overflow-y-auto overflow-x-hidden mt-2 md:mt-0 min-h-0 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <ul className="space-y-0.5 px-3 pb-3">
             {mainNavItems.map((item) => (
               <li key={item.id}>
                 <NavLink
                   to={item.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) => clsx(
-                    "flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm min-h-10",
                     isActive ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-900/20" : "hover:bg-white/10 hover:text-white font-medium"
                   )}
                 >
                   {({ isActive }) => (
                     <>
-                      <item.icon size={20} className={clsx(isActive ? "text-indigo-100" : "text-slate-400")} />
+                      <item.icon size={20} className={clsx("shrink-0", isActive ? "text-indigo-100" : "text-slate-400")} />
                       {item.label}
                     </>
                   )}
@@ -121,6 +87,9 @@ export function Layout() {
         <div className="p-4 sm:p-6 md:p-8 flex-1 overflow-x-hidden">
           <Outlet />
         </div>
+        <footer className="mt-auto border-t border-slate-200 bg-white px-4 py-4 text-center text-xs sm:text-sm text-slate-600">
+          Copyright@2026 - Phát triển bởi GV.Hồ Nguyễn Đa Thiện
+        </footer>
       </main>
       
       {/* Overlay for mobile menu */}
